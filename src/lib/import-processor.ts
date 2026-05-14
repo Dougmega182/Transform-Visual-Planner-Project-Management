@@ -67,7 +67,13 @@ export async function scanAndProcessImports() {
 
 export async function processScheduleFile(filePath: string | Buffer, fileName: string) {
   const db = getDb();
-  const workbook = typeof filePath === 'string' ? XLSX.readFile(filePath) : XLSX.read(filePath);
+  let workbook: XLSX.WorkBook;
+  if (typeof filePath === 'string') {
+    const fileBuffer = fs.readFileSync(filePath);
+    workbook = XLSX.read(fileBuffer);
+  } else {
+    workbook = XLSX.read(filePath);
+  }
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });

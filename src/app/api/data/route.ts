@@ -22,7 +22,7 @@ export async function GET() {
 
     let upcomingProjects: any[] = [];
     try { 
-      const projects = db.prepare('SELECT * FROM upcoming_projects WHERE status != "committed"').all();
+      const projects = db.prepare("SELECT * FROM upcoming_projects WHERE status != 'committed'").all();
       upcomingProjects = await Promise.all(projects.map(async (p: any) => {
         const forecast = await calculateProjectForecast(p.id);
         return {
