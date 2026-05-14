@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { getDb } from './db/database';
 import * as fs from 'fs';
 import * as path from 'path';
+import { syncAllResources, findBestResource, incrementUsageScore } from './resource-processor';
 
 const IMPORTS_DIR = path.resolve(process.cwd(), 'imports');
 
@@ -16,6 +17,9 @@ export async function scanAndProcessImports() {
   console.log(`[Import] Looking in: ${IMPORTS_DIR}`);
   console.log(`[Import] Directory exists: ${fs.existsSync(IMPORTS_DIR)}`);
   
+  // Sync core resources (Staff & Subs)
+  const resourceResults = syncAllResources();
+
   if (fs.existsSync(IMPORTS_DIR)) {
     const allFiles = fs.readdirSync(IMPORTS_DIR);
     console.log(`[Import] All files in directory:`, allFiles);
@@ -23,7 +27,9 @@ export async function scanAndProcessImports() {
   const results = { 
     filesProcessed: 0, 
     tasksImported: 0, 
-    newStaffCreated: 0, 
+    newStaffCreated: 0,
+    internalStaffImported: resourceResults.staff.imported,
+    subcontractorsImported: resourceResults.subs.imported,
     validationReport: [] as any[] 
   };
 
@@ -240,6 +246,17 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     const startDate = typeof startSerial === 'number' ? excelDateToJSDate(startSerial) : null;
     const status = progress === 100 ? 'completed' : (progress > 0 ? 'in-progress' : 'not-started');
     
+    // Smart matching: Find best resource for this trade
+    let suggestedSub = '';
+    if (trade && trade !== 'General') {
+       const bestResource = findBestResource(trade);
+       
+       if (bestResource) {
+         suggestedSub = bestResource.name;
+         incrementUsageScore(bestResource.id);
+       }
+    }
+
     insertTask.run(
       (front as any).id, 
       title, 
@@ -249,7 +266,7 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
       phase, 
       status,
       zone,
-      trade, 
+      suggestedSub || trade, // Use suggested sub or fallback to trade name
       8.0,
       '',
       0,
