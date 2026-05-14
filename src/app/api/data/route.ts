@@ -3,12 +3,14 @@ import { getDb } from '@/lib/db/database';
 
 async function calculateProjectForecast(projectId: number) {
   // Stub — returns empty forecast until forecasting module is built
+  void projectId;
   return {
     success: true,
     projectedStart: null,
     estimatedEnd: null,
     confidence: 0,
     resourceConflicts: [],
+    blockingReasons: [],
     phases: [],
     totalDurationDays: 0
   };
@@ -32,6 +34,9 @@ export async function GET() {
     
     let resourcePool: any[] = [];
     try { resourcePool = db.prepare('SELECT * FROM resource_pool').all(); } catch { /* */ }
+
+    let resources: any[] = [];
+    try { resources = db.prepare('SELECT * FROM resources ORDER BY is_preferred DESC, usage_score DESC').all(); } catch { /* */ }
 
     let upcomingProjects: any[] = [];
     try { 
@@ -111,6 +116,7 @@ export async function GET() {
       dependencies,
       constraints,
       resourcePool,
+      resources,
       upcomingProjects
     });
   } catch (err) {
