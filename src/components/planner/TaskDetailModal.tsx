@@ -55,6 +55,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     (new Date(task.endDate).getTime() - new Date(task.startDate).getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  const calculateQuality = () => {
+    const essential = [task.name, task.startDate, task.duration, task.crewCount, task.trade].every(Boolean);
+    const highValue = [task.zone, task.status].every(Boolean);
+    const niceToHave = [task.subcontractor, task.costRate].every(v => v !== undefined && v !== null && v !== 0 && v !== '');
+
+    if (essential && highValue && niceToHave) return { label: 'Gold', color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' };
+    if (essential && highValue) return { label: 'Silver', color: 'text-slate-400', bg: 'bg-slate-400/10 border-slate-400/20' };
+    if (essential) return { label: 'Bronze', color: 'text-orange-700', bg: 'bg-orange-700/10 border-orange-700/20' };
+    return { label: 'Incomplete', color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' };
+  };
+
+  const quality = calculateQuality();
+
   const handleSave = () => {
     if (onSave) {
       onSave({ progress: editProgress, status: editStatus });
@@ -89,6 +102,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${prio.bg}`}>
                   <Flag size={9} className={prio.color} />
                   <span className={prio.color}>{prio.label}</span>
+                </span>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${quality.bg}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${quality.color.replace('text-', 'bg-')}`} />
+                  <span className={quality.color}>{quality.label} Quality</span>
                 </span>
               </div>
               <h2 className="text-base font-bold text-[var(--text-primary)] leading-tight">
@@ -199,9 +216,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 <InfoCard icon={MapPin} label="Zone" value={task.zone} />
                 <InfoCard icon={User} label="Assignee" value={task.assignee} />
                 <InfoCard icon={Briefcase} label="Trade" value={task.trade} />
-                <InfoCard icon={Users} label="Crew Size" value={`${task.crew} workers`} />
+                <InfoCard icon={Users} label="Crew Size" value={`${task.crewCount} workers`} />
                 <InfoCard icon={Calendar} label="Duration" value={`${plannedDays} days`} />
+                {task.subcontractor && <InfoCard icon={User} label="Subcontractor" value={task.subcontractor} />}
+                {typeof task.costRate === 'number' && task.costRate > 0 && <InfoCard icon={TrendingUp} label="Cost Rate" value={`$${task.costRate}/day`} />}
               </div>
+
+              {task.equipmentNeeds && (
+                <div className="mt-4 p-3 bg-[var(--bg-primary)]/40 rounded-xl border border-[var(--border-color)]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle size={14} className="text-amber-500" />
+                    <span className="text-[11px] font-bold text-[var(--text-primary)]">Equipment Requirements</span>
+                  </div>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    {task.equipmentNeeds}
+                  </p>
+                </div>
+              )}
 
               {/* Dates */}
               <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] p-3 shadow-sm">

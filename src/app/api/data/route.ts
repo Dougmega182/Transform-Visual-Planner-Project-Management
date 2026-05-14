@@ -6,7 +6,29 @@ export async function GET() {
     const db = getDb();
 
     const fronts = db.prepare('SELECT * FROM site_fronts ORDER BY "order" ASC').all();
-    const staff = db.prepare('SELECT * FROM staff ORDER BY name ASC').all();
+    const staffRaw = db.prepare('SELECT * FROM staff ORDER BY name ASC').all();
+    const staff = staffRaw.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      trade: s.trade || 'General',
+      type: s.type || 'in-house',
+      dailyCost: s.daily_cost || 0,
+      avatar: s.avatar
+    }));
+    
+    let resourcePool: any[] = [];
+    try { resourcePool = db.prepare('SELECT * FROM resource_pool').all(); } catch { /* */ }
+
+    let upcomingProjects: any[] = [];
+    try { 
+      const projects = db.prepare('SELECT * FROM upcoming_projects').all();
+      upcomingProjects = projects.map((p: any) => ({
+        ...p,
+        requirements: db.prepare('SELECT * FROM upcoming_requirements WHERE project_id = ?').all(p.id)
+      }));
+    } catch { /* */ }
+
     const tasksRaw = db.prepare('SELECT * FROM tasks ORDER BY date ASC, id ASC').all();
     const taskAssignments = db.prepare('SELECT * FROM task_assignments').all();
     const staffLeave = db.prepare('SELECT * FROM staff_leave').all();
@@ -31,7 +53,12 @@ export async function GET() {
       actualEnd: t.actual_end,
       assignee: t.assignee || 'Unassigned',
       trade: t.trade || 'General',
-      crew: t.crew_count || 1,
+      crewCount: t.crew_count || 1,
+      subcontractor: t.subcontractor || '',
+      hoursPerDay: t.hours_per_day || 8.0,
+      equipmentNeeds: t.equipment_needs || '',
+      weatherSensitivity: Boolean(t.weather_sensitivity),
+      costRate: t.cost_rate || 0,
       dependencies: JSON.parse(t.dependencies_json || '[]'),
       comments: JSON.parse(t.comments_json || '[]'),
       constraints: JSON.parse(t.constraints_json || '[]'),
@@ -58,6 +85,8 @@ export async function GET() {
       staffLeave,
       dependencies,
       constraints,
+      resourcePool,
+      upcomingProjects
     });
   } catch (err) {
     console.error('GET /api/data error:', err);

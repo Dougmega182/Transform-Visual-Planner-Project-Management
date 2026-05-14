@@ -1,3 +1,4 @@
+/*
 import { getDb } from './database';
 
 const db = getDb();
@@ -57,3 +58,5 @@ insertConstraint.run(
 );
 
 console.log('Database seeded successfully!');
+*/
+console.log('Seeding disabled.');

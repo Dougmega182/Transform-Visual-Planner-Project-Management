@@ -24,12 +24,18 @@ export interface Task {
   priority: 'critical' | 'high' | 'medium' | 'low';
   progress: number;
   startDate: string; // Map plannedStart to startDate
+  duration: number;  // Added duration
   endDate: string;   // Map plannedEnd to endDate
   actualStart?: string;
   actualEnd?: string;
   assignee: string;
   trade: string;
-  crew: number;
+  crewCount: number;
+  subcontractor?: string;
+  hoursPerDay?: number;
+  equipmentNeeds?: string;
+  weatherSensitivity?: boolean;
+  costRate?: number;
   dependencies: TaskDependency[];
   comments: TaskComment[];
   constraints: string[];
@@ -48,6 +54,10 @@ export interface Staff {
   name: string;
   role: string;
   team: string;
+  trade?: string;
+  type?: 'in-house' | 'subcontractor';
+  dailyCost?: number;
+  avatar?: string;
 }
 
 export interface TaskAssignment {
@@ -83,6 +93,8 @@ interface PlannerState {
   staffLeave: StaffLeave[];
   constraints: Constraint[];
   dependencies: any[];
+  resourcePool: any[];
+  upcomingProjects: any[];
   
   setTasks: (tasks: Task[]) => void;
   setFronts: (fronts: Front[]) => void;
@@ -91,6 +103,8 @@ interface PlannerState {
   setTaskAssignments: (ta: TaskAssignment[]) => void;
   setStaffLeave: (sl: StaffLeave[]) => void;
   setDependencies: (deps: any[]) => void;
+  setResourcePool: (pool: any[]) => void;
+  setUpcomingProjects: (projects: any[]) => void;
   
   updateTask: (taskId: number, updates: Partial<Task>) => void;
 }
@@ -103,6 +117,8 @@ export const usePlannerStore = create<PlannerState>((set) => ({
   staffLeave: [],
   constraints: [],
   dependencies: [],
+  resourcePool: [],
+  upcomingProjects: [],
 
   setTasks: (tasks) => set({ tasks }),
   setFronts: (fronts) => set({ fronts }),
@@ -111,6 +127,8 @@ export const usePlannerStore = create<PlannerState>((set) => ({
   setTaskAssignments: (taskAssignments) => set({ taskAssignments }),
   setStaffLeave: (staffLeave) => set({ staffLeave }),
   setDependencies: (dependencies) => set({ dependencies }),
+  setResourcePool: (resourcePool) => set({ resourcePool }),
+  setUpcomingProjects: (upcomingProjects) => set({ upcomingProjects }),
 
   updateTask: (taskId, updates) => set((state) => ({
     tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t))

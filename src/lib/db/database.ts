@@ -27,7 +27,40 @@ function initSchema(db: Database.Database) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       role TEXT,
-      team TEXT
+      trade TEXT,
+      type TEXT DEFAULT 'in-house', -- 'in-house' or 'subcontractor'
+      daily_cost REAL DEFAULT 0,
+      avatar TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS resource_pool (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trade TEXT NOT NULL,           -- 'Carpenter', 'Labourer', 'Electrician'
+      source TEXT NOT NULL,          -- 'in-house' | 'subcontractor'
+      company_name TEXT,             -- NULL for in-house
+      total_capacity INTEGER NOT NULL,
+      effective_from DATE NOT NULL,
+      effective_until DATE,          -- NULL = indefinite
+      daily_cost REAL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS upcoming_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      source_file TEXT NOT NULL,
+      status TEXT DEFAULT 'tentative', -- 'tentative', 'committed', 'rejected'
+      projected_start DATE,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS upcoming_requirements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER REFERENCES upcoming_projects(id),
+      trade TEXT NOT NULL,
+      crew_needed INTEGER NOT NULL,
+      duration_days INTEGER NOT NULL,
+      sequence_order INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS tasks (
@@ -40,12 +73,18 @@ function initSchema(db: Database.Database) {
       priority TEXT DEFAULT 'medium',
       percent_complete INTEGER DEFAULT 0,
       date TEXT, -- Maps to plannedStart / startDate
+      duration INTEGER DEFAULT 1,
       planned_end TEXT,
       actual_start TEXT,
       actual_end TEXT,
       assignee TEXT,
       trade TEXT,
       crew_count INTEGER DEFAULT 1,
+      subcontractor TEXT,
+      hours_per_day REAL DEFAULT 8.0,
+      equipment_needs TEXT,
+      weather_sensitivity INTEGER DEFAULT 0, -- 0 = False, 1 = True
+      cost_rate REAL DEFAULT 0,
       dependencies_json TEXT DEFAULT '[]',
       comments_json TEXT DEFAULT '[]',
       constraints_json TEXT DEFAULT '[]',

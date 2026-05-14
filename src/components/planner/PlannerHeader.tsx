@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { LayoutGrid, GanttChartSquare, Users, ShieldAlert, Filter, Download, Plus } from 'lucide-react';
+import { LayoutGrid, GanttChartSquare, Users, ShieldAlert, Filter, Download, Plus, RefreshCw, LayoutList } from 'lucide-react';
 import { Task } from '@/store/usePlannerStore';
 
 import { ThemeToggle } from './ThemeToggle';
@@ -14,6 +14,7 @@ interface PlannerHeaderProps {
   setStatusFilter: (status: string) => void;
   onToggleStaff: () => void;
   onToggleConstraints: () => void;
+  onTogglePipeline: () => void;
   tasks: Task[];
 }
 
@@ -26,6 +27,7 @@ export const PlannerHeader: React.FC<PlannerHeaderProps> = ({
   setStatusFilter,
   onToggleStaff,
   onToggleConstraints,
+  onTogglePipeline,
   tasks,
 }) => {
   const stats = {
@@ -128,7 +130,61 @@ export const PlannerHeader: React.FC<PlannerHeaderProps> = ({
             <ShieldAlert size={18} />
             <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[var(--bg-primary)] group-hover:animate-pulse" />
           </button>
-          <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all border border-[var(--border-color)]">
+          <button 
+            onClick={onTogglePipeline}
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all border border-[var(--border-color)] relative group"
+            title="Upcoming Pipeline"
+          >
+            <LayoutList size={18} />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full border-2 border-[var(--bg-primary)] group-hover:animate-pulse" />
+          </button>
+          <button 
+            onClick={async () => {
+              const res = await fetch('/api/import/sync', { method: 'POST' });
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Sync Complete! ${data.message}`);
+                window.location.reload();
+              } else {
+                alert('Sync failed: ' + (data.error || 'Unknown error'));
+              }
+            }}
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all border border-[var(--border-color)] group"
+            title="Scrape Imports Folder"
+          >
+            <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
+          </button>
+          <button 
+            onClick={async () => {
+              const res = await fetch('/api/import', { method: 'POST' });
+              const data = await res.json();
+              if (data.success) {
+                let msg = `Import Successful!\n- ${data.tasksImported} tasks imported\n- ${data.newStaffCreated} new staff created`;
+                
+                const hasIssues = data.validationReport.some((r: any) => r.errors.length > 0 || r.warnings.length > 0);
+                if (hasIssues) {
+                  msg += '\n\nValidation Issues:';
+                  data.validationReport.forEach((r: any) => {
+                    if (r.errors.length > 0 || r.warnings.length > 0) {
+                      msg += `\n[${r.file}] ${r.errors.length} Errors, ${r.warnings.length} Warnings`;
+                    }
+                  });
+                  msg += '\nCheck console for full report.';
+                  console.log('Import Validation Report:', data.validationReport);
+                }
+                
+                alert(msg);
+                window.location.reload();
+              } else {
+                alert('Import failed: ' + (data.error || 'Unknown error'));
+              }
+            }}
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all border border-[var(--border-color)]"
+            title="Import from Excel"
+          >
+            <Download size={18} className="rotate-180" />
+          </button>
+          <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all border border-[var(--border-color)]" title="Export">
             <Download size={18} />
           </button>
           <button className="flex items-center gap-2 bg-[var(--accent-teal)] hover:opacity-90 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-teal-500/20 active:scale-95">

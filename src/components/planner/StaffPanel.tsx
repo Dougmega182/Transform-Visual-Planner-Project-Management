@@ -1,18 +1,23 @@
 'use client';
 import React, { useState } from 'react';
 import { X, Search, Users, UserCheck, CalendarDays, BarChart } from 'lucide-react';
-import { Staff, TaskAssignment, StaffLeave } from '@/store/usePlannerStore';
+import { Staff, TaskAssignment, StaffLeave, Task } from '@/store/usePlannerStore';
+import { SchedulingAssistant } from './SchedulingAssistant';
+import { ResourcePoolModal } from './ResourcePoolModal';
 
 interface StaffPanelProps {
   staff: Staff[];
+  tasks: Task[];
   taskAssignments: TaskAssignment[];
   staffLeave: StaffLeave[];
+  resourcePool: any[];
   onClose: () => void;
 }
 
-export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, staffLeave, onClose }) => {
+export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, tasks, taskAssignments, staffLeave, resourcePool, onClose }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'available' | 'assigned' | 'leave'>('all');
+  const [isPoolModalOpen, setIsPoolModalOpen] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -53,9 +58,18 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, 
             <Users size={16} className="text-blue-500" />
             <h2 className="text-sm font-bold text-[var(--text-primary)]">Resource Management</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-[var(--bg-primary)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setIsPoolModalOpen(true)}
+              className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all text-[10px] font-bold"
+              title="Manage Capacity Pool"
+            >
+              Manage Pool
+            </button>
+            <button onClick={onClose} className="p-1.5 hover:bg-[var(--bg-primary)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -139,6 +153,17 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, 
           </div>
         ))}
       </div>
+
+      {/* Scheduling Assistant Section */}
+      <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)]/30">
+        <SchedulingAssistant tasks={tasks} staff={staff} taskAssignments={taskAssignments} />
+      </div>
+
+      <ResourcePoolModal 
+        isOpen={isPoolModalOpen} 
+        onClose={() => setIsPoolModalOpen(false)} 
+        initialData={resourcePool} 
+      />
     </div>
   );
 };

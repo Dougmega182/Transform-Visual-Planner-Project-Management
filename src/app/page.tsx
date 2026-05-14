@@ -10,6 +10,7 @@ import { StaffPanel } from '@/components/planner/StaffPanel';
 import { ConstraintsPanel } from '@/components/planner/ConstraintsPanel';
 import { TaskDetailModal } from '@/components/planner/TaskDetailModal';
 import { TaskCard } from '@/components/planner/TaskCard';
+import { PipelineDashboard } from '@/components/planner/PipelineDashboard';
 import { usePlannerStore, Task } from '@/store/usePlannerStore';
 
 function addDays(date: Date, days: number): Date {
@@ -20,8 +21,8 @@ function addDays(date: Date, days: number): Date {
 
 export default function PlannerPage() {
   const { 
-    tasks, fronts, staff, taskAssignments, staffLeave, constraints,
-    setTasks, setFronts, setStaff, setConstraints, setTaskAssignments, setStaffLeave,
+    tasks, fronts, staff, taskAssignments, staffLeave, constraints, resourcePool, upcomingProjects,
+    setTasks, setFronts, setStaff, setConstraints, setTaskAssignments, setStaffLeave, setResourcePool, setUpcomingProjects,
     updateTask 
   } = usePlannerStore();
 
@@ -38,6 +39,7 @@ export default function PlannerPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showStaffPanel, setShowStaffPanel] = useState(false);
   const [showConstraints, setShowConstraints] = useState(false);
+  const [showPipeline, setShowPipeline] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -45,6 +47,28 @@ export default function PlannerPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const handleSyncPipeline = async () => {
+    await fetch('/api/import/upcoming', { method: 'POST' });
+    const res = await fetch('/api/data');
+    const data = await res.json();
+    setUpcomingProjects(data.upcomingProjects || []);
+  };
+
+  const handleCommitPipeline = async (projectId: number) => {
+    const res = await fetch('/api/import/upcoming/commit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId })
+    });
+    if (res.ok) {
+      const dataRes = await fetch('/api/data');
+      const data = await dataRes.json();
+      setTasks(data.tasks);
+      setUpcomingProjects(data.upcomingProjects || []);
+      alert('Project committed to schedule!');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,9 +80,11 @@ export default function PlannerPage() {
       setConstraints(data.constraints);
       setTaskAssignments(data.taskAssignments);
       setStaffLeave(data.staffLeave);
+      setResourcePool(data.resourcePool);
+      setUpcomingProjects(data.upcomingProjects || []);
     };
     fetchData();
-  }, [setTasks, setFronts, setStaff, setConstraints, setTaskAssignments, setStaffLeave]);
+  }, [setTasks, setFronts, setStaff, setConstraints, setTaskAssignments, setStaffLeave, setResourcePool, setUpcomingProjects]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -112,6 +138,7 @@ export default function PlannerPage() {
         setStatusFilter={setStatusFilter}
         onToggleStaff={() => setShowStaffPanel(!showStaffPanel)}
         onToggleConstraints={() => setShowConstraints(!showConstraints)}
+        onTogglePipeline={() => setShowPipeline(!showPipeline)}
         tasks={tasks}
       />
 
@@ -159,8 +186,10 @@ export default function PlannerPage() {
         {showStaffPanel && (
           <StaffPanel 
             staff={staff}
+            tasks={tasks}
             taskAssignments={taskAssignments}
             staffLeave={staffLeave}
+            resourcePool={resourcePool}
             onClose={() => setShowStaffPanel(false)}
           />
         )}
@@ -169,6 +198,15 @@ export default function PlannerPage() {
           <ConstraintsPanel 
             constraints={constraints}
             onClose={() => setShowConstraints(false)}
+          />
+        )}
+
+        {showPipeline && (
+          <PipelineDashboard 
+            projects={upcomingProjects.filter(p => p.status !== 'committed')}
+            onClose={() => setShowPipeline(false)}
+            onRefresh={handleSyncPipeline}
+            onCommit={handleCommitPipeline}
           />
         )}
       </main>

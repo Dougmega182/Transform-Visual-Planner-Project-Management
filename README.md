@@ -1,70 +1,80 @@
 # Transform™ Visual Planner
 
-A high-density, professional-grade construction scheduling and lean planning dashboard. Designed for real-time orchestration of site resources, task sequencing, and constraint management.
+A premium, high-density construction scheduling and lean planning dashboard. This platform is designed for real-time orchestration of site resources, task sequencing, and constraint management in a professional construction environment.
 
-## 🚀 Quick Start
+---
 
-### 1. Install Dependencies
+## 🏗️ What is Transform™ Visual Planner?
+
+Transform™ Visual Planner provides a centralized "Command Center" for site managers and project directors. It bridges the gap between high-level schedules and day-to-day site operations through:
+
+*   **Dual-View Dashboard**: Toggle between a **Drag-and-Drop Kanban Board** (for resource allocation) and a **28-Day Gantt Timeline** (for sequence visualization).
+*   **Resource Management**: Track site staff utilization, roles, and leave schedules in real-time.
+*   **Constraint Tracking**: Identify and resolve site roadblocks (RFIs, material delays, safety issues) before they impact the critical path.
+*   **Theme Awareness**: Fully optimized for both **Light and Dark modes**, ensuring visibility in both site offices and fieldwork environments.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+Install the necessary dependencies:
 ```bash
 npm install
 ```
 
-### 2. Seed the Database
-Initialize the SQLite database with the industrial dataset (Staff, Tasks, Constraints):
-```bash
-npx tsx src/lib/db/seed.ts
-```
+### 2. Database Initialization
+The app uses a local SQLite database (`transform.db`). You can initialize it with mock data (optional) or leave it empty for production use.
+*Note: Seeding logic is currently disabled for production readiness. To re-enable, see `src/lib/db/seed.ts`.*
 
-### 3. Run Development Server
+### 3. Running the App
+Start the development server on the configured port (**3004**):
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the planner.
+Alternatively, use the provided batch script on Windows:
+```bash
+start_app.bat
+```
+
+Open [http://localhost:3004](http://localhost:3004) to access the dashboard.
 
 ---
 
-## 🏗️ Core Architecture
+## 📖 How to Use the App
 
-### 1. Technology Stack
+### 🔄 Switching Views
+Use the **Board / Gantt** toggle in the top-left header to switch between project management styles.
+*   **Board Mode**: Drag tasks between different **Front Lanes** (Building zones, levels, or specific work areas).
+*   **Gantt Mode**: Scroll through the 4-week lookahead to see task durations and overlaps.
+
+### 🌓 Theme Selection
+Click the **Sun/Moon icon** in the header to toggle between Light and Dark modes. The app will remember your preference.
+
+### 👷 Managing Resources
+Click the **Users** icon in the header to open the **Resource Management** panel. Here you can see who is assigned to which tasks and their current utilization percentage.
+
+### 🛑 Managing Constraints
+Click the **Shield/Alert** icon to open the **Constraints** panel. This lists all site issues. Critical risks are highlighted in red to ensure immediate attention.
+
+### 📝 Task Details
+Click on any **Task Card** to open the deep-dive modal. From here, you can:
+*   Update **Percent Complete**.
+*   View and add **Comments**.
+*   Check **Dependencies** and **Linked Resources**.
+*   Edit task metadata (Start/End dates, Assignee, Priority).
+
+### 📥 Importing Data
+The system includes an automated import pipeline. Place your `.xlsx` or `.xlsm` schedule files into the `imports/` folder and use the `/api/import` endpoint to synchronize the database with your master schedules.
+
+---
+
+## 🛠️ Technology Stack
 - **Framework**: Next.js 16 (App Router)
-- **State Management**: Zustand (Synchronized with local storage and API)
-- **Drag & Drop**: @dnd-kit (Optimized for high-density grids)
-- **Database**: SQLite (via better-sqlite3)
-- **Styling**: Tailwind CSS (Dark-mode professional aesthetic)
-- **Icons**: Lucide React
-
-### 2. Data Model
-- **Tasks**: Rich metadata including Zones, Trades, Crew Pax, and Schedule Variance.
-- **Fronts**: Logical project boundaries (Lanes) for resource grouping.
-- **Staff**: Site resource tracking with utilization and leave management.
-- **Constraints**: Risk management system for RFIs, material delays, and site issues.
-
----
-
-## 🛠️ Key Components
-
-### 📅 **28-Day Gantt Timeline**
-Scrollable timeline view with RAG (Red/Amber/Green) status tracking, progress overlays, and "Today" focal points.
-
-### 📋 **Drag & Drop Board**
-Orchestrate tasks between Project Fronts. Real-time API persistence ensures site movements are captured instantly.
-
-### 🛑 **Constraint & Issue Management**
-Side panel for tracking project risks. Filter by severity (Critical/High) and status (Open/Resolved) to maintain site reliability.
-
-### 👷 **Staff & Resource Panel**
-Derive real-time utilization stats. Track which engineers are assigned to which Fronts and manage team leave records.
-
-### 🔍 **Task Detail Deep-Dive**
-Comprehensive modal for managing:
-- **Dependencies**: FS/SS connection mapping.
-- **Progress**: Interactive percentage sliders.
-- **Comments**: Site-wide audit log and collaboration thread.
-- **Variance**: Automated "Ahead/Behind" calculation relative to the current date.
-
----
-
-## 🧹 Maintenance & Cleanup
-Legacy components have been removed to ensure zero-risk production builds. The system is fully type-safe and verified against the latest `better-sqlite3` schema.
+- **Database**: SQLite (better-sqlite3)
+- **State**: Zustand (with Persistence)
+- **Styling**: Tailwind CSS & Vanilla CSS Variables
+- **Animations**: Framer Motion
+- **Charts**: Chart.js
 
 **© 2026 Transform™ Visual Planner | Lean Construction Orchestration**
