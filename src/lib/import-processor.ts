@@ -110,7 +110,7 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     if (!data[i]) continue;
     const row = data[i].map(c => String(c || '').toLowerCase());
     // Broaden the search for common project schedule headers
-    if (row.some(h => h.includes('title') || h.includes('task') || h.includes('start') || h.includes('activity') || h.includes('resource'))) {
+    if (row.some(h => h.includes('title') || h.includes('task') || h.includes('start') || h.includes('activity') || h.includes('resource') || h.includes('job') || h.includes('complete'))) {
       console.log(`[Import] Found potential header row at idx ${i}:`, row.filter(h => h).slice(0, 5));
       headerRowIdx = i;
       break;
@@ -124,10 +124,10 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   const headers = data[headerRowIdx].map(h => String(h).toLowerCase());
   const col = (name: string) => {
      if (name === 'title') {
-        return headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('description') || h.includes('name') || h.includes('activity'));
+        return headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('description') || h.includes('name') || h.includes('activity') || h.includes('job'));
      }
      if (name === 'start') {
-        return headers.findIndex(h => h.includes('start') || h.includes('planned start') || h.includes('date'));
+        return headers.findIndex(h => h.includes('start') || h.includes('planned start') || h.includes('date') || h.includes('completion'));
      }
      if (name === 'duration') {
         return headers.findIndex(h => h.includes('duration') || h.includes('days') || h.includes('length'));
@@ -136,7 +136,7 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
         return headers.findIndex(h => h.includes('trade') || h.includes('assignee') || h.includes('assigned to') || h.includes('resource') || h.includes('contact'));
      }
      if (name === 'progress') {
-        return headers.findIndex(h => h.includes('progress') || h.includes('percent') || h.includes('%'));
+        return headers.findIndex(h => h.includes('progress') || h.includes('percent') || h.includes('%') || h.includes('complete'));
      }
      if (name === 'zone' || name === 'location') {
         return headers.findIndex(h => h.includes('zone') || h.includes('location') || h.includes('area') || h.includes('front'));
@@ -161,6 +161,9 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     const info = db.prepare('INSERT INTO site_fronts (name, "order") VALUES (?, ?)').run(frontName, (maxOrder.mo || 0) + 1);
     front = { id: info.lastInsertRowid };
   }
+
+  // Clear existing tasks for this front before re-importing
+  db.prepare('DELETE FROM tasks WHERE front_id = ?').run((front as any).id);
 
   const rows = data.slice(headerRowIdx + 1);
   let tasksImported = 0;
