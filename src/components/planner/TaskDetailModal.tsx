@@ -4,6 +4,7 @@ import {
   X, Calendar, Clock, User, MapPin, AlertTriangle, CheckCircle2, Save, TrendingUp, Link2, MessageSquare, Briefcase, Users, Flag, ArrowUpRight, ArrowDownRight, Edit3, ChevronRight
 } from 'lucide-react';
 import { Task, TaskDependency, TaskComment } from '@/store/usePlannerStore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -12,24 +13,24 @@ interface TaskDetailModalProps {
 }
 
 const statusConfig: Record<Task['status'], { label: string; color: string; bg: string; icon: any }> = {
-  'not-started': { label: 'Not Started', color: 'text-gray-400', bg: 'bg-gray-500/10 border-gray-500/20', icon: Clock },
-  'in-progress': { label: 'In Progress', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', icon: TrendingUp },
-  completed: { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-  delayed: { label: 'Delayed', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', icon: AlertTriangle },
-  blocked: { label: 'Blocked', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', icon: AlertTriangle },
+  'not-started': { label: 'Not Started', color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/10 border-gray-200 dark:border-gray-500/20', icon: Clock },
+  'in-progress': { label: 'In Progress', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20', icon: TrendingUp },
+  completed: { label: 'Completed', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20', icon: CheckCircle2 },
+  delayed: { label: 'Delayed', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20', icon: AlertTriangle },
+  blocked: { label: 'Blocked', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20', icon: AlertTriangle },
 };
 
 const priorityConfig: Record<Task['priority'], { label: string; color: string; bg: string }> = {
-  critical: { label: 'Critical', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20' },
-  high: { label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
-  medium: { label: 'Medium', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-  low: { label: 'Low', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+  critical: { label: 'Critical', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20' },
+  high: { label: 'High', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/10 border-orange-100 dark:border-orange-500/20' },
+  medium: { label: 'Medium', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20' },
+  low: { label: 'Low', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20' },
 };
 
 const depStatusDot: Record<TaskDependency['status'], string> = {
-  completed: 'bg-emerald-400',
-  'in-progress': 'bg-blue-400',
-  'not-started': 'bg-gray-500',
+  completed: 'bg-emerald-500',
+  'in-progress': 'bg-blue-500',
+  'not-started': 'bg-[var(--text-muted)]',
 };
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave }) => {
@@ -70,34 +71,34 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div 
-        className="relative w-full max-w-2xl max-h-[85vh] bg-gray-900 border border-gray-700 rounded-xl shadow-2xl flex flex-col overflow-hidden mx-4"
+        className="relative w-full max-w-2xl max-h-[85vh] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden mx-4 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-gray-800">
+        <div className="p-5 border-b border-[var(--border-color)]">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-mono text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-primary)] px-1.5 py-0.5 rounded border border-[var(--border-color)] font-bold">
                   {task.id}
                 </span>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${prio.bg}`}>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${prio.bg}`}>
                   <Flag size={9} className={prio.color} />
                   <span className={prio.color}>{prio.label}</span>
                 </span>
               </div>
-              <h2 className="text-base font-semibold text-gray-100 leading-tight">
+              <h2 className="text-base font-bold text-[var(--text-primary)] leading-tight">
                 {task.name}
               </h2>
-              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{task.description}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-[var(--bg-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
             >
               <X size={18} />
             </button>
@@ -105,18 +106,18 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
           {/* Status & progress bar */}
           <div className="mt-4 flex items-center gap-3">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border ${stat.bg}`}>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${stat.bg}`}>
               <StatIcon size={12} className={stat.color} />
               <span className={stat.color}>{stat.label}</span>
             </span>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-gray-500">Progress</span>
-                <span className="text-[10px] font-semibold text-gray-300">{task.progress}%</span>
+                <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">Progress</span>
+                <span className="text-[10px] font-bold text-[var(--text-primary)] font-mono">{task.progress}%</span>
               </div>
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[var(--bg-primary)] rounded-full overflow-hidden border border-[var(--border-color)]/50">
                 <div
-                  className={`h-full rounded-full transition-all ${
+                  className={`h-full rounded-full transition-all duration-700 ${
                     task.progress >= 100
                       ? 'bg-emerald-500'
                       : task.progress >= 50
@@ -129,14 +130,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
             </div>
             <div className="text-right shrink-0">
               {variance >= 0 ? (
-                <div className="flex items-center gap-1 text-emerald-400">
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                   <ArrowUpRight size={12} />
-                  <span className="text-[10px] font-medium">{variance}d ahead</span>
+                  <span className="text-[10px] font-bold">{variance}d ahead</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 text-red-400">
+                <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
                   <ArrowDownRight size={12} />
-                  <span className="text-[10px] font-medium">{Math.abs(variance)}d behind</span>
+                  <span className="text-[10px] font-bold">{Math.abs(variance)}d behind</span>
                 </div>
               )}
             </div>
@@ -144,27 +145,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-[var(--border-color)] bg-[var(--bg-primary)]/30">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2.5 text-xs font-medium transition-colors relative ${
+              className={`flex-1 py-3 text-xs font-bold transition-all relative ${
                 activeTab === tab.key
-                  ? 'text-blue-400'
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'text-[var(--accent-teal)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {tab.label}
               {activeTab === tab.key && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
+                <motion.div 
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-teal)]" 
+                />
               )}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-[var(--bg-primary)]/10">
           {/* ── Details Tab ── */}
           {activeTab === 'details' && (
             <div className="space-y-4">
@@ -173,7 +177,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 {isEditing ? (
                   <button
                     onClick={handleSave}
-                    className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-opacity"
                   >
                     <Save size={12} />
                     Save Changes
@@ -181,7 +185,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 ) : (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                   >
                     <Edit3 size={12} />
                     Edit
@@ -200,74 +204,79 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
               </div>
 
               {/* Dates */}
-              <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
-                <h4 className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Schedule</h4>
+              <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] p-3 shadow-sm">
+                <h4 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Schedule</h4>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-gray-500 block text-[10px]">Planned Start</span>
-                    <span className="text-gray-300">{task.startDate}</span>
+                    <span className="text-[var(--text-muted)] block text-[10px] font-bold">Planned Start</span>
+                    <span className="text-[var(--text-primary)] font-mono">{task.startDate}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block text-[10px]">Planned End</span>
-                    <span className="text-gray-300">{task.endDate}</span>
+                    <span className="text-[var(--text-muted)] block text-[10px] font-bold">Planned End</span>
+                    <span className="text-[var(--text-primary)] font-mono">{task.endDate}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block text-[10px]">Actual Start</span>
-                    <span className="text-gray-300">{task.actualStart || '—'}</span>
+                    <span className="text-[var(--text-muted)] block text-[10px] font-bold">Actual Start</span>
+                    <span className="text-[var(--text-primary)] font-mono">{task.actualStart || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500 block text-[10px]">Actual End</span>
-                    <span className="text-gray-300">{task.actualEnd || '—'}</span>
+                    <span className="text-[var(--text-muted)] block text-[10px] font-bold">Actual End</span>
+                    <span className="text-[var(--text-primary)] font-mono">{task.actualEnd || '—'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Edit fields */}
               {isEditing && (
-                <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-3">
-                  <h4 className="text-[10px] font-semibold text-blue-400 uppercase">Update Task</h4>
-                  <div>
-                    <label className="text-[10px] text-gray-400 block mb-1">Status</label>
-                    <select
-                      value={editStatus}
-                      onChange={(e) => setEditStatus(e.target.value as any)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-blue-500/50"
-                    >
-                      <option value="not-started">Not Started</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="delayed">Delayed</option>
-                      <option value="blocked">Blocked</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 block mb-1">
-                      Progress: {editProgress}%
-                    </label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={editProgress}
-                      onChange={(e) => setEditProgress(Number(e.target.value))}
-                      className="w-full accent-blue-500"
-                    />
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 space-y-4 shadow-inner">
+                  <h4 className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Update Task</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] text-[var(--text-muted)] font-bold block mb-1">Status</label>
+                      <select
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value as any)}
+                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-teal)] transition-colors"
+                      >
+                        <option value="not-started">Not Started</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="delayed">Delayed</option>
+                        <option value="blocked">Blocked</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] text-[var(--text-muted)] font-bold block">
+                          Progress
+                        </label>
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 font-mono">{editProgress}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={editProgress}
+                        onChange={(e) => setEditProgress(Number(e.target.value))}
+                        className="w-full accent-[var(--accent-teal)]"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Constraints */}
               {task.constraints?.length > 0 && (
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
-                  <h4 className="text-[10px] font-semibold text-amber-400 uppercase mb-2 flex items-center gap-1">
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 shadow-sm">
+                  <h4 className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase mb-2 flex items-center gap-1 tracking-widest">
                     <AlertTriangle size={10} />
                     Active Constraints
                   </h4>
                   <ul className="space-y-1.5">
                     {task.constraints.map((con, i) => (
-                      <li key={i} className="text-xs text-gray-400 flex items-start gap-2">
+                      <li key={i} className="text-xs text-[var(--text-secondary)] flex items-start gap-2">
                         <ChevronRight size={10} className="text-amber-500 mt-0.5 shrink-0" />
-                        {con}
+                        <span className="font-medium">{con}</span>
                       </li>
                     ))}
                   </ul>
@@ -279,59 +288,75 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
           {/* ── Dependencies Tab ── */}
           {activeTab === 'dependencies' && (
             <div className="space-y-2">
-              {task.dependencies?.map((dep) => (
-                <div
-                  key={dep.id}
-                  className="flex items-center gap-3 bg-gray-800/50 border border-gray-700 rounded-lg p-3 hover:bg-gray-800 transition-colors"
-                >
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${depStatusDot[dep.status]}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-300 truncate">{dep.name}</div>
-                    <div className="text-[10px] text-gray-600">{dep.id}</div>
-                  </div>
-                  <span className="text-[9px] font-mono text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700">
-                    {dep.type}
-                  </span>
-                  <Link2 size={12} className="text-gray-600 shrink-0" />
+              {task.dependencies?.length === 0 ? (
+                <div className="text-center py-8 opacity-50">
+                  <Link2 size={24} className="mx-auto mb-2 text-[var(--text-muted)]" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">No dependencies</p>
                 </div>
-              ))}
+              ) : (
+                task.dependencies?.map((dep) => (
+                  <div
+                    key={dep.id}
+                    className="flex items-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl p-3 hover:border-[var(--accent-teal)]/50 transition-all shadow-sm"
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 shadow-sm ${depStatusDot[dep.status]}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-[var(--text-primary)] truncate">{dep.name}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] font-mono">{dep.id}</div>
+                    </div>
+                    <span className="text-[9px] font-bold text-[var(--text-muted)] bg-[var(--bg-primary)] px-1.5 py-0.5 rounded border border-[var(--border-color)] uppercase">
+                      {dep.type}
+                    </span>
+                    <Link2 size={12} className="text-[var(--text-muted)] shrink-0" />
+                  </div>
+                ))
+              )}
             </div>
           )}
 
           {/* ── Comments Tab ── */}
           {activeTab === 'comments' && (
             <div className="space-y-4">
-              {task.comments?.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-semibold text-gray-400">
-                      {comment.author.split(' ').map((n) => n[0]).join('')}
-                    </span>
+              <div className="space-y-4 mb-4">
+                {task.comments?.length === 0 ? (
+                  <div className="text-center py-8 opacity-50">
+                    <MessageSquare size={24} className="mx-auto mb-2 text-[var(--text-muted)]" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">No comments yet</p>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-medium text-gray-300">{comment.author}</span>
-                      <span className="text-[10px] text-gray-600">{comment.timestamp}</span>
+                ) : (
+                  task.comments?.map((comment) => (
+                    <div key={comment.id} className="flex gap-3 bg-[var(--bg-secondary)] p-3 rounded-xl border border-[var(--border-color)] shadow-sm">
+                      <div className="w-8 h-8 rounded-full bg-[var(--bg-primary)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)]">
+                          {comment.author.split(' ').map((n) => n[0]).join('')}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-[var(--text-primary)]">{comment.author}</span>
+                          <span className="text-[10px] text-[var(--text-muted)] font-mono">{comment.timestamp}</span>
+                        </div>
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">{comment.text}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 leading-relaxed">{comment.text}</p>
-                  </div>
-                </div>
-              ))}
+                  ))
+                )}
+              </div>
 
               {/* New comment input */}
-              <div className="flex gap-2 pt-2 border-t border-gray-800">
+              <div className="sticky bottom-0 pt-3 bg-[var(--bg-secondary)]/50 backdrop-blur-md border-t border-[var(--border-color)] flex gap-2">
                 <input
                   type="text"
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
+                  className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-teal)]"
                 />
                 <button
                   onClick={() => setNewComment('')}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors"
+                  className="p-2 bg-[var(--accent-teal)] hover:opacity-90 text-white rounded-xl transition-all shadow-md active:scale-95"
                 >
-                  <MessageSquare size={14} />
+                  <MessageSquare size={16} />
                 </button>
               </div>
             </div>
@@ -344,11 +369,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
 /* ── Helper component ── */
 const InfoCard: React.FC<{ icon: any; label: string; value: string }> = ({ icon: Icon, label, value }) => (
-  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-2.5">
+  <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl p-2.5 shadow-sm hover:border-[var(--accent-teal)]/30 transition-colors">
     <div className="flex items-center gap-1.5 mb-1">
-      <Icon size={10} className="text-gray-500" />
-      <span className="text-[10px] text-gray-500">{label}</span>
+      <Icon size={10} className="text-[var(--text-muted)]" />
+      <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-tighter">{label}</span>
     </div>
-    <span className="text-xs font-medium text-gray-300">{value}</span>
+    <span className="text-xs font-bold text-[var(--text-primary)]">{value}</span>
   </div>
 );

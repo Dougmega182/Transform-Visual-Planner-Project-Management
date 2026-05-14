@@ -11,11 +11,11 @@ interface TaskCardProps {
 }
 
 const statusConfig: Record<Task['status'], { icon: React.ReactNode; color: string; bg: string }> = {
-  'not-started': { icon: <Clock size={10} />, color: 'text-gray-400', bg: 'bg-gray-500/20' },
-  'in-progress': { icon: <Clock size={10} />, color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  completed: { icon: <CheckCircle2 size={10} />, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-  delayed: { icon: <AlertTriangle size={10} />, color: 'text-amber-400', bg: 'bg-amber-500/20' },
-  blocked: { icon: <AlertTriangle size={10} />, color: 'text-red-400', bg: 'bg-red-500/20' },
+  'not-started': { icon: <Clock size={10} />, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20' },
+  'in-progress': { icon: <Clock size={10} />, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/20' },
+  completed: { icon: <CheckCircle2 size={10} />, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/20' },
+  delayed: { icon: <AlertTriangle size={10} />, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/20' },
+  blocked: { icon: <AlertTriangle size={10} />, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/20' },
 };
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, overlay, onTaskClick }) => {
@@ -38,23 +38,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, overlay, onTaskClick }
       {...attributes}
       onClick={() => onTaskClick?.(task)}
       className={`
-        group relative bg-gray-800/80 border border-gray-700/50 rounded-xl p-3 
-        hover:border-gray-500 hover:bg-gray-800 transition-all cursor-grab active:cursor-grabbing
+        group relative bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl p-3 
+        hover:border-[var(--accent-teal)] transition-all cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md
         ${overlay ? 'shadow-2xl ring-2 ring-blue-500/50 scale-105 opacity-100 z-50' : ''}
         ${isDragging && !overlay ? 'opacity-30' : 'opacity-100'}
       `}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-[11px] font-bold text-gray-200 leading-tight line-clamp-2">
+        <h4 className="text-[11px] font-bold text-[var(--text-primary)] leading-tight line-clamp-2">
           {task.name}
         </h4>
-        <div className={`shrink-0 p-1 rounded-md ${config.bg}`}>
+        <div className={`shrink-0 p-1 rounded-md ${config.bg} ${config.color}`}>
           {config.icon}
         </div>
       </div>
 
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex-1 h-1 bg-gray-900 rounded-full overflow-hidden">
+        <div className="flex-1 h-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all duration-700 ${
               task.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'
@@ -62,15 +62,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, overlay, onTaskClick }
             style={{ width: `${task.progress}%` }} 
           />
         </div>
-        <span className="text-[9px] font-mono text-gray-500">{task.progress}%</span>
+        <span className="text-[9px] font-mono text-[var(--text-muted)] font-bold">{task.progress}%</span>
       </div>
 
       <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-1.5 text-[9px] text-gray-500">
-          <User size={10} />
-          <span className="truncate max-w-[80px]">{task.assignee}</span>
+        <div className="flex items-center gap-1.5 text-[9px] text-[var(--text-secondary)]">
+          <User size={10} className="text-[var(--text-muted)]" />
+          <span className="truncate max-w-[80px] font-medium">{task.assignee}</span>
         </div>
-        <span className="text-[9px] font-mono text-gray-600">
+        <span className="text-[9px] font-mono text-[var(--text-muted)] font-medium">
           {new Date(task.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
         </span>
       </div>

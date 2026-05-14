@@ -45,54 +45,54 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, 
     : 0;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-gray-800 shadow-2xl z-50 flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-80 bg-[var(--bg-secondary)] border-l border-[var(--border-color)] shadow-2xl z-50 flex flex-col transition-all duration-300">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
+      <div className="p-4 border-b border-[var(--border-color)]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-blue-400" />
-            <h2 className="text-sm font-semibold text-white">Resource Management</h2>
+            <Users size={16} className="text-blue-500" />
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">Resource Management</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1.5 hover:bg-[var(--bg-primary)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
             <X size={16} />
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-gray-800/40 rounded-xl p-2.5 text-center border border-gray-800/50">
-            <div className="text-lg font-bold text-emerald-400">{counts.available}</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Available</div>
+          <div className="bg-[var(--bg-primary)] rounded-xl p-2.5 text-center border border-[var(--border-color)]">
+            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{counts.available}</div>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-tighter font-bold">Available</div>
           </div>
-          <div className="bg-gray-800/40 rounded-xl p-2.5 text-center border border-gray-800/50">
-            <div className="text-lg font-bold text-blue-400">{counts.assigned}</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Assigned</div>
+          <div className="bg-[var(--bg-primary)] rounded-xl p-2.5 text-center border border-[var(--border-color)]">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{counts.assigned}</div>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-tighter font-bold">Assigned</div>
           </div>
-          <div className="bg-gray-800/40 rounded-xl p-2.5 text-center border border-gray-800/50">
-            <div className="text-lg font-bold text-amber-400">{avgUtilization}%</div>
-            <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Avg Util.</div>
+          <div className="bg-[var(--bg-primary)] rounded-xl p-2.5 text-center border border-[var(--border-color)]">
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{avgUtilization}%</div>
+            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-tighter font-bold">Avg Util.</div>
           </div>
         </div>
 
         <div className="relative">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search resources..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-800/50 border border-gray-800 rounded-lg pl-8 pr-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-teal)]/50 transition-colors"
           />
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex px-4 py-2 gap-1 border-b border-gray-800 bg-gray-900/50">
+      <div className="flex px-4 py-2 gap-1 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/50">
         {(['all', 'available', 'assigned', 'leave'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${
-              filter === f ? 'bg-gray-800 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+              filter === f ? 'bg-[var(--accent-teal)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -101,26 +101,26 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, 
       </div>
 
       {/* Staff List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-[var(--bg-primary)]/20">
         {filtered.map(s => (
-          <div key={s.id} className="group p-3 rounded-xl bg-gray-800/30 border border-gray-800/50 hover:border-gray-700 hover:bg-gray-800/50 transition-all">
+          <div key={s.id} className="group p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-[var(--accent-teal)]/50 hover:shadow-sm transition-all">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="text-xs font-semibold text-gray-200">{s.name}</h4>
-                <p className="text-[10px] text-gray-500">{s.role} · {s.team}</p>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">{s.name}</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">{s.role} · {s.team}</p>
               </div>
               <div className={`w-1.5 h-1.5 rounded-full mt-1 ${
                 s.availability === 'available' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' :
-                s.availability === 'assigned' ? 'bg-blue-500' : 'bg-gray-600'
+                s.availability === 'assigned' ? 'bg-blue-500' : 'bg-[var(--text-muted)]'
               }`} />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[9px]">
-                <span className="text-gray-500 uppercase tracking-wider">Utilization</span>
-                <span className={s.utilization > 90 ? 'text-red-400' : 'text-gray-400'}>{s.utilization}%</span>
+                <span className="text-[var(--text-muted)] uppercase tracking-wider font-bold">Utilization</span>
+                <span className={`font-mono ${s.utilization > 90 ? 'text-red-500 font-bold' : 'text-[var(--text-secondary)]'}`}>{s.utilization}%</span>
               </div>
-              <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-[var(--bg-primary)] rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-500 ${
                     s.utilization > 90 ? 'bg-red-500' : s.utilization > 50 ? 'bg-blue-500' : 'bg-emerald-500'
@@ -131,9 +131,9 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, taskAssignments, 
             </div>
 
             {s.assignmentsCount > 0 && (
-              <div className="mt-3 flex items-center gap-1.5 text-[9px] text-gray-400">
+              <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[var(--text-muted)]">
                 <BarChart size={10} />
-                <span>{s.assignmentsCount} active tasks</span>
+                <span className="font-medium">{s.assignmentsCount} active tasks</span>
               </div>
             )}
           </div>

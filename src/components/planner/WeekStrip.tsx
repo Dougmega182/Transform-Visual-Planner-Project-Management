@@ -40,28 +40,28 @@ export const WeekStrip: React.FC<WeekStripProps> = ({ currentWeekStart, onPrev, 
   const weekEnd = addDays(currentWeekStart, 6);
 
   return (
-    <div className="bg-gray-900/80 border-b border-gray-800 px-4 py-2">
+    <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-color)] px-4 py-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={onPrev}
-            className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+            className="p-1 rounded hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
           <button
             onClick={onNext}
-            className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+            className="p-1 rounded hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronRight size={16} />
           </button>
-          <span className="text-xs text-gray-300 font-medium ml-1">
+          <span className="text-xs text-[var(--text-secondary)] font-medium ml-1">
             {formatShort(currentWeekStart)} — {formatShort(weekEnd)}
           </span>
         </div>
         <button
           onClick={onToday}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors border border-[var(--border-color)]"
         >
           <Calendar size={11} />
           Today
@@ -78,20 +78,20 @@ export const WeekStrip: React.FC<WeekStripProps> = ({ currentWeekStart, onPrev, 
                 label.isToday
                   ? 'bg-blue-500/15 ring-1 ring-blue-500/30'
                   : label.isWeekend
-                  ? 'bg-gray-800/40'
+                  ? 'bg-[var(--bg-cell-alt)]'
                   : ''
               }`}
             >
               <span
-                className={`text-[9px] uppercase tracking-wider ${
-                  label.isToday ? 'text-blue-400' : label.isWeekend ? 'text-gray-600' : 'text-gray-500'
+                className={`text-[9px] uppercase tracking-wider font-bold ${
+                  label.isToday ? 'text-blue-500' : label.isWeekend ? 'text-[var(--text-muted)] opacity-50' : 'text-[var(--text-muted)]'
                 }`}
               >
                 {label.day}
               </span>
               <span
-                className={`text-xs font-semibold ${
-                  label.isToday ? 'text-blue-300' : label.isWeekend ? 'text-gray-600' : 'text-gray-300'
+                className={`text-xs font-bold ${
+                  label.isToday ? 'text-blue-600 dark:text-blue-300' : label.isWeekend ? 'text-[var(--text-muted)] opacity-50' : 'text-[var(--text-primary)]'
                 }`}
               >
                 {label.date}

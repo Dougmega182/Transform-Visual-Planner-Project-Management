@@ -102,7 +102,7 @@ export default function PlannerPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-gray-100 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans transition-colors duration-300">
       <PlannerHeader 
         viewMode={viewMode}
         setViewMode={setViewMode}

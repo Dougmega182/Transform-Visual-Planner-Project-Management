@@ -38,14 +38,14 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
   const totalOpen = constraints.filter((c) => c.status !== 'resolved').length;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-gray-800 shadow-2xl z-50 flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-80 bg-[var(--bg-secondary)] border-l border-[var(--border-color)] shadow-2xl z-50 flex flex-col transition-all duration-300">
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
+      <div className="p-4 border-b border-[var(--border-color)]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-200">Constraints & Issues</h2>
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">Constraints & Issues</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors"
+            className="p-1 rounded hover:bg-[var(--bg-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
             <X size={16} />
           </button>
@@ -54,28 +54,28 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
         {/* Summary pills */}
         <div className="flex gap-2 mb-3">
           <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-red-400">{openCritical}</div>
-            <div className="text-[8px] text-red-400/70 uppercase">Critical</div>
+            <div className="text-base font-bold text-red-600 dark:text-red-400">{openCritical}</div>
+            <div className="text-[8px] text-red-600/70 dark:text-red-400/70 uppercase font-bold">Critical</div>
           </div>
           <div className="flex-1 bg-orange-500/10 border border-orange-500/20 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-orange-400">{openHigh}</div>
-            <div className="text-[8px] text-orange-400/70 uppercase">High</div>
+            <div className="text-base font-bold text-orange-600 dark:text-orange-400">{openHigh}</div>
+            <div className="text-[8px] text-orange-600/70 dark:text-orange-400/70 uppercase font-bold">High</div>
           </div>
-          <div className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg p-2 text-center">
-            <div className="text-base font-bold text-gray-300">{totalOpen}</div>
-            <div className="text-[8px] text-gray-500 uppercase">Total Open</div>
+          <div className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg p-2 text-center">
+            <div className="text-base font-bold text-[var(--text-primary)]">{totalOpen}</div>
+            <div className="text-[8px] text-[var(--text-muted)] uppercase font-bold">Total Open</div>
           </div>
         </div>
 
         {/* Search */}
         <div className="relative mb-2">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600" />
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search constraints..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-[10px] text-gray-300 placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-1.5 text-[10px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-teal)]/50"
           />
         </div>
 
@@ -84,7 +84,7 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value as any)}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-blue-500/50"
+            className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-teal)]/50 cursor-pointer"
           >
             <option value="all">All Severities</option>
             <option value="critical">Critical</option>
@@ -95,7 +95,7 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-blue-500/50"
+            className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent-teal)]/50 cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="open">Open</option>
@@ -106,11 +106,11 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
       </div>
 
       {/* Constraint list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-[var(--bg-primary)]/20">
         {filtered.length === 0 && (
           <div className="text-center py-8">
-            <Filter size={24} className="mx-auto text-gray-700 mb-2 opacity-20" />
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">No constraints match</p>
+            <Filter size={24} className="mx-auto text-[var(--text-muted)] mb-2 opacity-20" />
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">No constraints match</p>
           </div>
         )}
 
@@ -122,15 +122,15 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
           return (
             <div
               key={c.id}
-              className={`rounded-lg border p-3 transition-colors hover:bg-gray-800/30 ${sc.bg}`}
+              className={`rounded-lg border p-3 transition-all hover:bg-[var(--bg-secondary)] hover:shadow-md ${sc.bg}`}
             >
               <div className="flex items-start gap-2 mb-1.5">
                 <SevIcon size={14} className={`${sc.color} mt-0.5 shrink-0`} />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-[11px] font-semibold text-gray-200 leading-tight truncate">
+                  <h3 className="text-[11px] font-bold text-[var(--text-primary)] leading-tight truncate">
                     {c.title}
                   </h3>
-                  <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 line-clamp-2">
                     {c.description}
                   </p>
                 </div>
@@ -140,20 +140,20 @@ export const ConstraintsPanel: React.FC<ConstraintsPanelProps> = ({ constraints,
                 <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${sc.bg}`}>
                   <span className={sc.color}>{sc.label}</span>
                 </span>
-                <span className="inline-flex items-center gap-1 text-[9px] text-gray-400">
+                <span className="inline-flex items-center gap-1 text-[9px] text-[var(--text-secondary)]">
                   <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
                   {st.label}
                 </span>
-                <span className="text-[9px] text-gray-600 ml-auto font-medium">
+                <span className="text-[9px] text-[var(--text-muted)] ml-auto font-bold uppercase tracking-tighter">
                   {c.owner}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-800/50">
-                <span className="text-[9px] text-gray-500 font-medium truncate max-w-[60%]">
+              <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--border-color)]">
+                <span className="text-[9px] text-[var(--text-secondary)] font-bold truncate max-w-[60%]">
                   {c.front}
                 </span>
-                <span className="text-[9px] text-gray-600">
+                <span className="text-[9px] text-[var(--text-muted)] font-mono">
                   {new Date(c.raisedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                 </span>
               </div>

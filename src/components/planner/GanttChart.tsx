@@ -59,12 +59,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     tasks.filter((t) => t.frontId === frontId);
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto bg-[var(--bg-primary)]/50">
       <div className="min-w-[900px] relative">
         {/* Today vertical line */}
         {todayOffset >= 0 && todayOffset < totalDays && (
           <div
-            className="absolute top-0 bottom-0 w-px bg-blue-500/40 z-20 pointer-events-none"
+            className="absolute top-0 bottom-0 w-px bg-blue-500/60 z-20 pointer-events-none shadow-[0_0_8px_rgba(59,130,246,0.3)]"
             style={{
               left: `calc(176px + ((100% - 176px) * ${todayOffset} / ${totalDays}))`,
             }}
@@ -72,9 +72,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         )}
 
         {/* Day column headers */}
-        <div className="flex border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-          <div className="w-44 shrink-0 px-3 py-2 border-r border-gray-800">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+        <div className="flex border-b border-[var(--border-color)] sticky top-0 bg-[var(--bg-secondary)]/95 backdrop-blur-sm z-30">
+          <div className="w-44 shrink-0 px-3 py-3 border-r border-[var(--border-color)]">
+            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">
               Front / Task
             </span>
           </div>
@@ -86,28 +86,28 @@ export const GanttChart: React.FC<GanttChartProps> = ({
               return (
                 <div
                   key={i}
-                  className={`flex-1 text-center py-1.5 border-r border-gray-800/50 ${
-                    isWeekend ? 'bg-gray-800/30' : ''
-                  } ${isToday ? 'bg-blue-500/10' : ''}`}
+                  className={`flex-1 text-center py-2 border-r border-[var(--border-color)]/50 ${
+                    isWeekend ? 'bg-[var(--bg-primary)]/50' : ''
+                  } ${isToday ? 'bg-blue-500/5 dark:bg-blue-500/10' : ''}`}
                 >
                   <div
-                    className={`text-[8px] uppercase ${
+                    className={`text-[8px] uppercase font-bold tracking-tighter ${
                       isToday
-                        ? 'text-blue-400'
+                        ? 'text-blue-600 dark:text-blue-400'
                         : isWeekend
-                        ? 'text-gray-700'
-                        : 'text-gray-600'
+                        ? 'text-[var(--text-muted)] opacity-50'
+                        : 'text-[var(--text-muted)]'
                     }`}
                   >
                     {d.toLocaleDateString('en-GB', { weekday: 'narrow' })}
                   </div>
                   <div
-                    className={`text-[10px] font-medium ${
+                    className={`text-[11px] font-bold font-mono ${
                       isToday
-                        ? 'text-blue-300'
+                        ? 'text-blue-700 dark:text-blue-300'
                         : isWeekend
-                        ? 'text-gray-700'
-                        : 'text-gray-400'
+                        ? 'text-[var(--text-muted)] opacity-50'
+                        : 'text-[var(--text-primary)]'
                     }`}
                   >
                     {d.getDate()}
@@ -126,17 +126,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           return (
             <div key={front.id}>
               {/* Front label row */}
-              <div className="flex border-b border-gray-800/50">
-                <div className="w-44 shrink-0 px-3 py-1.5 border-r border-gray-800 flex items-center gap-2 bg-gray-800/20">
-                  <div className={`w-2 h-2 rounded-full ${dotColor}`} />
-                  <span className="text-[11px] font-semibold text-gray-300 truncate">
+              <div className="flex border-b border-[var(--border-color)]">
+                <div className="w-44 shrink-0 px-3 py-2 border-r border-[var(--border-color)] flex items-center gap-2 bg-[var(--bg-primary)]/30 backdrop-blur-sm">
+                  <div className={`w-2 h-2 rounded-full ${dotColor} shadow-sm`} />
+                  <span className="text-[11px] font-bold text-[var(--text-primary)] truncate">
                     {front.name}
                   </span>
-                  <span className="text-[9px] text-gray-600 ml-auto">
+                  <span className="text-[9px] text-[var(--text-muted)] ml-auto font-mono font-bold">
                     {frontTasks.length}
                   </span>
                 </div>
-                <div className="flex-1 bg-gray-800/10" />
+                <div className="flex-1 bg-[var(--bg-primary)]/10" />
               </div>
               {/* Task bar rows */}
               {frontTasks.map((task) => {
@@ -165,53 +165,53 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   task.progress != null ? Math.min(100, Math.max(0, task.progress)) : 0;
 
                 return (
-                  <div key={task.id} className="flex border-b border-gray-800/30 hover:bg-gray-800/20">
+                  <div key={task.id} className="flex border-b border-[var(--border-color)]/30 hover:bg-[var(--bg-secondary)] transition-colors group">
                     {/* Task name */}
-                    <div className="w-44 shrink-0 px-3 py-2 border-r border-gray-800 flex items-center">
-                      <span className="text-[10px] text-gray-400 truncate pl-4">
+                    <div className="w-44 shrink-0 px-3 py-2.5 border-r border-[var(--border-color)] flex items-center">
+                      <span className="text-[10px] text-[var(--text-secondary)] font-medium truncate pl-4 group-hover:text-[var(--text-primary)] transition-colors">
                         {task.name}
                       </span>
                     </div>
 
                     {/* Bar area */}
-                    <div className="flex-1 relative h-9">
+                    <div className="flex-1 relative h-10">
                       {isVisible && (
                         <button
                           onClick={() => onTaskClick(task)}
-                          className={`absolute top-1.5 h-6 rounded border cursor-pointer transition-all hover:brightness-125 ${barColor} ${barBorder} ${
+                          className={`absolute top-2 h-6 rounded-lg border-2 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg active:scale-95 ${barColor} ${barBorder} ${
                             isBlocked ? 'opacity-50 border-dashed' : ''
-                          } ${isCompleted ? 'opacity-60' : ''}`}
+                          } ${isCompleted ? 'opacity-60' : ''} shadow-sm z-10`}
                           style={{
                             left: `${leftPercent}%`,
                             width: `${widthPercent}%`,
-                            minWidth: '18px',
+                            minWidth: '20px',
                           }}
                           title={`${task.name} — ${task.stage} (${progressWidth}%)`}
                         >
                           {/* Progress fill */}
                           <div
-                            className="absolute inset-0 rounded bg-white/10"
+                            className="absolute inset-0 rounded-md bg-white/20"
                             style={{ width: `${progressWidth}%` }}
                           />
 
                           {/* Label */}
-                          {widthPercent > 8 && (
-                            <span className="relative z-10 text-[9px] text-white font-medium px-1.5 truncate block leading-6">
+                          {widthPercent > 10 && (
+                            <span className="relative z-10 text-[9px] text-white font-bold px-2 truncate block leading-5 drop-shadow-sm">
                               {task.name}
                             </span>
                           )}
 
                           {/* Blocked indicator */}
                           {isBlocked && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-gray-900 flex items-center justify-center">
-                              <span className="text-[7px] text-white font-bold">!</span>
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-600 rounded-full border-2 border-white dark:border-gray-950 flex items-center justify-center shadow-md">
+                              <span className="text-[8px] text-white font-black">!</span>
                             </div>
                           )}
 
                           {/* Completed checkmark */}
                           {isCompleted && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-gray-900 flex items-center justify-center">
-                              <span className="text-[7px] text-white">✓</span>
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-600 rounded-full border-2 border-white dark:border-gray-950 flex items-center justify-center shadow-md">
+                              <span className="text-[8px] text-white font-black">✓</span>
                             </div>
                           )}
                         </button>
