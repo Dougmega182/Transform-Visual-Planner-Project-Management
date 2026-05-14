@@ -57,36 +57,42 @@ export async function calculateProjectForecast(projectId: number) {
       let maxGroupDuration = 0;
 
       for (const req of group) {
-        maxGroupDuration = Math.max(maxGroupDuration, req.duration_days);
+        let reqDaysCounted = 0;
+        let dayOffset = 0;
         
-        // Check availability for this requirement in its window
-        for (let dayOffset = 0; dayOffset < req.duration_days; dayOffset++) {
+        while (reqDaysCounted < req.duration_days) {
           const checkDay = addDays(groupStart, dayOffset);
-          
-          // Committed
-          const committed = activeTasks
-            .filter(t => t.trade === req.trade)
-            .filter(t => {
-              const tStart = new Date(t.date);
-              const tEnd = addDays(tStart, t.duration || 1);
-              return checkDay >= tStart && checkDay < tEnd;
-            })
-            .reduce((sum, t) => sum + (t.crew_count || 0), 0);
+          const dayOfWeek = checkDay.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-          // Pool
-          const poolCapacity = pool
-            .filter(p => p.trade === req.trade)
-            .filter(p => {
-               const from = new Date(p.effective_from);
-               const until = p.effective_until ? new Date(p.effective_until) : addDays(today, 365);
-               return checkDay >= from && checkDay <= until;
-            })
-            .reduce((sum, p) => sum + (p.total_capacity || 0), 0);
+          if (!isWeekend) {
+            // Check availability only on working days
+            const committed = activeTasks
+              .filter(t => t.trade === req.trade)
+              .filter(t => {
+                const tStart = new Date(t.date);
+                const tEnd = addDays(tStart, (t.duration || 1));
+                return checkDay >= tStart && checkDay < tEnd;
+              })
+              .reduce((sum, t) => sum + (t.crew_count || 0), 0);
 
-          if (poolCapacity - committed < req.crew_needed) {
-            allRequirementsMet = false;
-            break;
+            const poolCapacity = pool
+              .filter(p => p.trade === req.trade)
+              .filter(p => {
+                 const from = new Date(p.effective_from);
+                 const until = p.effective_until ? new Date(p.effective_until) : addDays(today, 365);
+                 return checkDay >= from && checkDay <= until;
+              })
+              .reduce((sum, p) => sum + (p.total_capacity || 0), 0);
+
+            if (poolCapacity - committed < req.crew_needed) {
+              allRequirementsMet = false;
+              break;
+            }
+            reqDaysCounted++;
           }
+          dayOffset++;
+          maxGroupDuration = Math.max(maxGroupDuration, dayOffset);
         }
         if (!allRequirementsMet) break;
       }
@@ -115,7 +121,15 @@ export async function calculateProjectForecast(projectId: number) {
       
       const trades: any[] = [];
       for (const req of group) {
-        maxDuration = Math.max(maxDuration, req.duration_days);
+        let reqDaysCounted = 0;
+        let dayOffset = 0;
+        while (reqDaysCounted < req.duration_days) {
+          const d = addDays(groupStart, dayOffset);
+          if (d.getDay() !== 0 && d.getDay() !== 6) reqDaysCounted++;
+          dayOffset++;
+        }
+        maxDuration = Math.max(maxDuration, dayOffset);
+        
         const poolCapacity = pool.filter(p => p.trade === req.trade).reduce((sum, p) => sum + (p.total_capacity || 0), 0);
         trades.push({
           trade: req.trade,

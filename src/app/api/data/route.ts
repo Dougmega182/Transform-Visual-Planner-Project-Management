@@ -22,12 +22,24 @@ export async function GET() {
 
     let upcomingProjects: any[] = [];
     try { 
-      const projects = db.prepare('SELECT * FROM upcoming_projects').all();
-      upcomingProjects = projects.map((p: any) => ({
-        ...p,
-        requirements: db.prepare('SELECT * FROM upcoming_requirements WHERE project_id = ?').all(p.id)
+      const projects = db.prepare('SELECT * FROM upcoming_projects WHERE status != "committed"').all();
+      upcomingProjects = await Promise.all(projects.map(async (p: any) => {
+        const forecast = await calculateProjectForecast(p.id);
+        return {
+          id: p.id,
+          name: p.name,
+          sourceFile: p.source_file,
+          status: p.status,
+          projectedStart: p.projected_start,
+          notes: p.notes,
+          createdAt: p.created_at,
+          blockingReasons: forecast.success ? [] : forecast.blockingReasons,
+          phases: forecast.phases || [],
+          estimatedEnd: forecast.estimatedEnd,
+          totalDurationDays: forecast.totalDurationDays
+        };
       }));
-    } catch { /* */ }
+    } catch (err) { console.error('Upcoming Fetch Error:', err); }
 
     const tasksRaw = db.prepare('SELECT * FROM tasks ORDER BY date ASC, id ASC').all();
     const taskAssignments = db.prepare('SELECT * FROM task_assignments').all();

@@ -68,10 +68,10 @@ export const PipelineDashboard: React.FC<PipelineDashboardProps> = ({ projects, 
                   <h3 className="font-bold text-sm text-[var(--text-primary)]">{project.name}</h3>
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-[var(--text-muted)]">
                     <span className="flex items-center gap-1">
-                      <Calendar size={10} /> Target: {project.projected_start || 'ASAP'}
+                      <Calendar size={10} /> Target: {project.projectedStart || 'ASAP'}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock size={10} /> Created: {format(new Date(project.created_at), 'MMM d')}
+                      <Clock size={10} /> Created: {format(new Date(project.createdAt), 'MMM d')}
                     </span>
                   </div>
                 </div>
@@ -84,7 +84,7 @@ export const PipelineDashboard: React.FC<PipelineDashboardProps> = ({ projects, 
                     <AlertCircle size={12} /> Bottlenecks Detected
                   </div>
                   <ul className="text-[10px] text-[var(--text-secondary)] space-y-1">
-                    {project.blocking_reasons?.map((reason: string, i: number) => (
+                    {project.blockingReasons?.map((reason: string, i: number) => (
                       <li key={i}>• {reason}</li>
                     ))}
                   </ul>

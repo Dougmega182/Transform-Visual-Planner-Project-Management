@@ -35,26 +35,40 @@ export async function POST(request: Request) {
 
       for (const order of sortedOrders) {
         const group = grouped[order];
-        let maxDuration = 0;
+        let maxGroupCalendarDuration = 0;
 
         for (const req of group) {
-          maxDuration = Math.max(maxDuration, req.duration_days);
+          // Calculate this specific task's calendar span
+          let reqDaysCounted = 0;
+          let calendarOffset = 0;
+          const taskStartDate = new Date(baseDate);
+          taskStartDate.setDate(taskStartDate.getDate() + runningOffset);
+
+          // Find start date if it happens to land on a weekend
+          while (taskStartDate.getDay() === 0 || taskStartDate.getDay() === 6) {
+            taskStartDate.setDate(taskStartDate.getDate() + 1);
+          }
+
+          while (reqDaysCounted < req.duration_days) {
+            const d = new Date(taskStartDate);
+            d.setDate(d.getDate() + calendarOffset);
+            if (d.getDay() !== 0 && d.getDay() !== 6) reqDaysCounted++;
+            calendarOffset++;
+          }
           
-          const taskDate = new Date(baseDate);
-          taskDate.setDate(taskDate.getDate() + runningOffset);
-          const dateStr = taskDate.toISOString().split('T')[0];
+          maxGroupCalendarDuration = Math.max(maxGroupCalendarDuration, calendarOffset);
 
           insertTask.run(
             `${project.name} - ${req.trade}`,
-            dateStr,
-            req.duration_days,
+            taskStartDate.toISOString().split('T')[0],
+            calendarOffset, // Use calendar span for Gantt
             req.crew_needed,
             req.trade,
             'not-started',
             'medium'
           );
         }
-        runningOffset += maxDuration;
+        runningOffset += maxGroupCalendarDuration;
       }
 
       // Mark project as committed

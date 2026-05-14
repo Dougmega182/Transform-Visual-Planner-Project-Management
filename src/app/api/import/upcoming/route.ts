@@ -114,19 +114,7 @@ export async function POST() {
           continue;
         }
 
-        if (missingTrades.length > 0) {
-          processed.push({ file, name: projectName, status: 'missing_trade', message: `Trades not in pool: ${missingTrades.join(', ')}` });
-          summary.cannot_staff++;
-          continue;
-        }
-
-        if (capacityIssues.length > 0) {
-          processed.push({ file, name: projectName, status: 'cannot_staff', message: `Insufficient capacity: ${capacityIssues.join('; ')}` });
-          summary.cannot_staff++;
-          continue;
-        }
-
-        // Upsert into DB
+        // 3. Persist to DB regardless of trade/capacity issues (so they show in UI)
         const existing = db.prepare('SELECT id FROM upcoming_projects WHERE source_file = ?').get(file) as any;
         let projectId: number;
         if (existing) {
@@ -145,7 +133,22 @@ export async function POST() {
             .run(projectId, req.trade, req.crew_needed, req.duration_days, req.sequence_order);
         }
 
-        // 3. Forecast
+        // 4. Validation Checks
+        if (missingTrades.length > 0) {
+          db.prepare('UPDATE upcoming_projects SET status = ? WHERE id = ?').run('cannot_staff', projectId);
+          processed.push({ file, name: projectName, status: 'missing_trade', message: `Trades not in pool: ${missingTrades.join(', ')}` });
+          summary.cannot_staff++;
+          continue;
+        }
+
+        if (capacityIssues.length > 0) {
+          db.prepare('UPDATE upcoming_projects SET status = ? WHERE id = ?').run('cannot_staff', projectId);
+          processed.push({ file, name: projectName, status: 'cannot_staff', message: `Insufficient capacity: ${capacityIssues.join('; ')}` });
+          summary.cannot_staff++;
+          continue;
+        }
+
+        // 5. Forecast
         const forecast = await calculateProjectForecast(projectId);
         summary.projects_parsed++;
 

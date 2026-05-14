@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import { seedEssentialData } from './seed';
 
 const DB_PATH = path.join(process.cwd(), 'transform.db');
 
@@ -11,6 +12,7 @@ export function getDb(): Database.Database {
     _db.pragma('journal_mode = WAL');
     _db.pragma('foreign_keys = ON');
     initSchema(_db);
+    seedEssentialData();
   }
   return _db;
 }
