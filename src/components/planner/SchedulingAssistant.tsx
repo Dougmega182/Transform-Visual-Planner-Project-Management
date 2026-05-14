@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Clock, Play } from 'lucide-react';
+import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { usePlannerStore, Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
