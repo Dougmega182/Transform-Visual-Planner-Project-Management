@@ -41,19 +41,14 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
 
   const getNextBusinessDay = (date: Date): Date => {
     let next = addDays(date, 1);
-    while (!isBusinessDay(next)) {
-      next = addDays(next, 1);
-    }
+    while (!isBusinessDay(next)) next = addDays(next, 1);
     return next;
   };
 
-  const getBusinessDaysEnd = (start: Date, durationDays: number): Date => {
+  const getBusinessDaysEnd = (start: Date, days: number): Date => {
     let current = start;
     let counted = 0;
-    while (counted < durationDays) {
-      current = getNextBusinessDay(current);
-      counted++;
-    }
+    while (counted < days) { current = getNextBusinessDay(current); counted++; }
     return current;
   };
 
@@ -61,125 +56,87 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
     const day = startOfDay(date);
     return tasks.filter(t => {
       if (!t.startDate || !t.endDate || t.status === 'completed') return false;
-      return isWithinInterval(day, {
-        start: startOfDay(new Date(t.startDate)),
-        end: startOfDay(new Date(t.endDate)),
-      });
+      return isWithinInterval(day, { start: startOfDay(new Date(t.startDate)), end: startOfDay(new Date(t.endDate)) });
     });
   };
 
-  const getZoneDensity = (date: Date, zone: string): number => {
-    const active = getActiveTasksOnDate(date);
-    return active
-      .filter(t => t.zone === zone)
-      .reduce((sum, t) => sum + (t.crewCount || 1), 0);
-  };
+  const getZoneDensity = (date: Date, zone: string): number =>
+    getActiveTasksOnDate(date).filter(t => t.zone === zone).reduce((s, t) => s + (t.crewCount || 1), 0);
 
-  const getTradeUtilization = (date: Date, trade: string): { used: number; capacity: number } => {
-    const active = getActiveTasksOnDate(date);
-    const used = active
-      .filter(t => t.trade === trade)
-      .reduce((sum, t) => sum + (t.crewCount || 1), 0);
-
-    const capacity = resourcePool
-      .filter(p => p.trade === trade)
-      .reduce((sum, p) => sum + (p.total_capacity || 0), 0);
-
+  const getTradeUtilization = (date: Date, trade: string) => {
+    const used = getActiveTasksOnDate(date).filter(t => t.trade === trade).reduce((s, t) => s + (t.crewCount || 1), 0);
+    const capacity = resourcePool.filter(p => p.trade === trade).reduce((s, p) => s + (p.total_capacity || 0), 0);
     return { used, capacity };
   };
 
   const scoreStartDate = (candidateDate: Date): { score: number; reasoning: string[] } => {
     const reasoning: string[] = [];
     let score = 100;
-
-    const effectiveDuration = requirements.weatherSensitive
-      ? Math.ceil(requirements.duration * scoringConfig.weatherBuffer)
-      : requirements.duration;
-
-    const endDate = getBusinessDaysEnd(candidateDate, effectiveDuration);
-
-    let worstUtilization = 0;
-    let current = candidateDate;
-
-    while (current <= endDate) {
-      if (isBusinessDay(current)) {
-        const { used, capacity } = getTradeUtilization(current, requirements.trade);
+    const dur = requirements.weatherSensitive ? Math.ceil(requirements.duration * scoringConfig.weatherBuffer) : requirements.duration;
+    const endDate = getBusinessDaysEnd(candidateDate, dur);
+    let worstUtil = 0;
+    let cur = candidateDate;
+    while (cur <= endDate) {
+      if (isBusinessDay(cur)) {
+        const { used, capacity } = getTradeUtilization(cur, requirements.trade);
         const needed = used + requirements.crewSize;
-
-        if (capacity > 0 && needed > capacity) {
-          const overBy = needed - capacity;
-          score -= overBy * 10;
-          reasoning.push(`${format(current, 'MMM d')}: ${requirements.trade} over capacity by ${overBy}`);
+        if (capacity > 0 && needed > capacity) { 
+          score -= (needed - capacity) * 10; 
+          reasoning.push(`${format(cur, 'MMM d')}: ${requirements.trade} over capacity by ${needed - capacity}`); 
         }
-
-        if (capacity > 0) {
-          worstUtilization = Math.max(worstUtilization, needed / capacity);
-        }
-
-        const density = getZoneDensity(current, requirements.zone) + requirements.crewSize;
-        if (density > scoringConfig.densityThreshold) {
-          score -= scoringConfig.zonePenalty;
-          reasoning.push(`${format(current, 'MMM d')}: ${requirements.zone} congested (${density} crew)`);
+        if (capacity > 0) worstUtil = Math.max(worstUtil, needed / capacity);
+        const density = getZoneDensity(cur, requirements.zone) + requirements.crewSize;
+        if (density > scoringConfig.densityThreshold) { 
+          score -= scoringConfig.zonePenalty; 
+          reasoning.push(`${format(cur, 'MMM d')}: ${requirements.zone} congested (${density} crew)`); 
         }
       }
-      current = addDays(current, 1);
+      cur = addDays(cur, 1);
     }
-
-    if (worstUtilization < 0.7) {
-      score += 10;
-      reasoning.push(`Good trade availability (peak ${Math.round(worstUtilization * 100)}%)`);
-    } else if (worstUtilization > 0.9) {
-      score -= 15;
-      reasoning.push(`Tight trade availability (peak ${Math.round(worstUtilization * 100)}%)`);
+    if (worstUtil < 0.7) { score += 10; reasoning.push(`Good trade availability (peak ${Math.round(worstUtil * 100)}%)`); }
+    else if (worstUtil > 0.9) { score -= 15; reasoning.push(`Tight trade availability (peak ${Math.round(worstUtil * 100)}%)`); }
+    
+    const sameTrade = getActiveTasksOnDate(candidateDate).filter(t => t.trade === requirements.trade);
+    if (sameTrade.length >= scoringConfig.subLimit) { 
+      score -= 20; 
+      reasoning.push(`${sameTrade.length} concurrent ${requirements.trade} tasks`); 
     }
-
-    // Subcontractor concurrency check
-    const activeOnStart = getActiveTasksOnDate(candidateDate);
-    const sameTradeActive = activeOnStart.filter(t => t.trade === requirements.trade);
-    if (sameTradeActive.length >= scoringConfig.subLimit) {
-      score -= 20;
-      reasoning.push(`${sameTradeActive.length} concurrent ${requirements.trade} tasks already running`);
-    }
-
+    
     if (requirements.weatherSensitive) {
-      const month = candidateDate.getMonth();
-      if (month >= 10 || month <= 2) {
-        score -= 10;
-        reasoning.push('Winter period — weather risk elevated');
-      } else if (month >= 4 && month <= 8) {
-        score += 5;
-        reasoning.push('Summer period — favorable weather window');
-      }
+      const m = candidateDate.getMonth();
+      if (m >= 10 || m <= 2) { score -= 10; reasoning.push('Winter — weather risk elevated'); }
+      else if (m >= 4 && m <= 8) { score += 5; reasoning.push('Summer — favorable weather'); }
     }
-
-    if (reasoning.length === 0) {
-      reasoning.push('No conflicts detected — clear window');
+    
+    const busyStaff = staff.filter(s => taskAssignments.filter(a => a.staff_id === s.id).some(a => {
+      const t = tasks.find(tk => tk.id === a.task_id);
+      return t?.startDate && t?.endDate && isWithinInterval(startOfDay(candidateDate), { start: startOfDay(new Date(t.startDate)), end: startOfDay(new Date(t.endDate)) });
+    })).length;
+    
+    if (staff.length > 0 && staff.length - busyStaff < requirements.crewSize) { 
+      score -= 15; 
+      reasoning.push(`Only ${staff.length - busyStaff}/${requirements.crewSize} staff free`); 
     }
-
+    
+    if (!reasoning.length) reasoning.push('No conflicts — clear window');
     return { score: Math.max(0, Math.min(100, score)), reasoning };
   };
 
   const runAnalysis = () => {
     const candidates: { date: Date; score: number; reasoning: string[] }[] = [];
-    let scanDate = startOfDay(new Date());
-
-    for (let i = 0; i < 90; i++) {
-      if (isBusinessDay(scanDate)) {
-        const { score, reasoning } = scoreStartDate(scanDate);
-        candidates.push({ date: new Date(scanDate), score, reasoning });
-      }
-      scanDate = addDays(scanDate, 1);
+    let d = startOfDay(new Date());
+    for (let i = 0; i < 90; i++) { 
+      if (isBusinessDay(d)) { 
+        const r = scoreStartDate(d); 
+        candidates.push({ date: new Date(d), ...r }); 
+      } 
+      d = addDays(d, 1); 
     }
-
     candidates.sort((a, b) => b.score - a.score);
     setResults(candidates.slice(0, 5));
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 50) return 'text-amber-400';
-    return 'text-red-400';
-  };
+  const getScoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   return (
     <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] p-5 shadow-xl">
