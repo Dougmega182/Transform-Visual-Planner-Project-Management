@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, Search, Users, UserCheck, CalendarDays, BarChart } from 'lucide-react';
 import { Staff, TaskAssignment, StaffLeave, Task } from '@/store/usePlannerStore';
-import { SchedulingAssistant } from './SchedulingAssistant';
+import SchedulingAssistant from './SchedulingAssistant';
 import { ResourcePoolModal } from './ResourcePoolModal';
 
 interface StaffPanelProps {
@@ -156,7 +156,7 @@ export const StaffPanel: React.FC<StaffPanelProps> = ({ staff, tasks, taskAssign
 
       {/* Scheduling Assistant Section */}
       <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)]/30">
-        <SchedulingAssistant tasks={tasks} staff={staff} taskAssignments={taskAssignments} />
+        <SchedulingAssistant />
       </div>
 
       <ResourcePoolModal 

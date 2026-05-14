@@ -4,13 +4,10 @@ import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Clock } from 'lucide
 import { usePlannerStore, Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
-interface SchedulingAssistantProps {
-  tasks: Task[];
-  staff: Staff[];
-  taskAssignments: TaskAssignment[];
-}
-
-export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks, staff, taskAssignments }) => {
+const SchedulingAssistant: React.FC = () => {
+  const tasks = usePlannerStore((state) => state.tasks);
+  const staff = usePlannerStore((state) => state.staff || []);
+  const taskAssignments = usePlannerStore((state) => state.taskAssignments || []);
   const resourcePool = usePlannerStore((state) => state.resourcePool);
 
   const [requirements, setRequirements] = useState({
@@ -134,11 +131,7 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
     setResults(candidates.slice(0, 5));
   };
 
-  const getScoreColor = (s: number) => {
-    if (s >= 80) return 'text-green-400';
-    if (s >= 60) return 'text-yellow-400';
-    return 'text-red-400';
-  };
+  const getScoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 60 ? 'text-yellow-400' : 'text-red-400';
 
   const prioritizedTrades = trades.filter(t => t !== 'General');
 
