@@ -155,12 +155,12 @@ export async function POST() {
 
         if (!forecast.success) {
           status = 'cannot_staff';
-          blockingReasons = [forecast.message || 'No staffing window found'];
+          blockingReasons = forecast.blockingReasons || [forecast.message || 'No staffing window found'];
           summary.cannot_staff++;
         } else {
           if (targetStart && calculatedStart && calculatedStart > targetStart) {
             status = 'delayed';
-            blockingReasons = [`Earliest availability is ${calculatedStart}, target was ${targetStart}`];
+            blockingReasons = forecast.blockingReasons || [`Earliest availability is ${calculatedStart}, target was ${targetStart}`];
             summary.delayed++;
           } else {
             status = 'can_start';

@@ -105,7 +105,7 @@ export async function calculateProjectForecast(projectId: number) {
     const startStr = format(bestStartDate, 'yyyy-MM-dd');
     db.prepare('UPDATE upcoming_projects SET projected_start = ? WHERE id = ?').run(startStr, projectId);
     
-    // Calculate Phase Breakdown for the winning date
+    // ... phases logic ...
     const phases: any[] = [];
     let currentGroupOffset = 0;
     for (const order of sortedOrders) {
@@ -116,12 +116,7 @@ export async function calculateProjectForecast(projectId: number) {
       const trades: any[] = [];
       for (const req of group) {
         maxDuration = Math.max(maxDuration, req.duration_days);
-        
-        // Simple capacity lookup for reporting
-        const poolCapacity = pool
-          .filter(p => p.trade === req.trade)
-          .reduce((sum, p) => sum + (p.total_capacity || 0), 0);
-        
+        const poolCapacity = pool.filter(p => p.trade === req.trade).reduce((sum, p) => sum + (p.total_capacity || 0), 0);
         trades.push({
           trade: req.trade,
           crew: req.crew_needed,
@@ -147,9 +142,22 @@ export async function calculateProjectForecast(projectId: number) {
       phases 
     };
   } else {
+    // Determine bottleneck trade for the first day of target start
+    const firstDay = searchStart;
+    const bottlenecks: string[] = [];
+    for (const order of sortedOrders) {
+      for (const req of groups[order]) {
+        const poolCapacity = pool.filter(p => p.trade === req.trade).reduce((sum, p) => sum + (p.total_capacity || 0), 0);
+        if (poolCapacity < req.crew_needed) {
+          bottlenecks.push(`Trade ${req.trade} requirements (${req.crew_needed}) exceed total pool capacity (${poolCapacity})`);
+        }
+      }
+    }
+
     return { 
       success: false, 
-      message: 'Could not find a staffing window in the next 120 days. Check if requirements exceed total pool capacity.' 
+      message: 'Could not find a staffing window in the next 120 days.',
+      blockingReasons: bottlenecks.length > 0 ? bottlenecks : ['Existing commitments block all available windows in the next 120 days.']
     };
   }
 }

@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Local test data & artifacts
+/imports/upcoming/test_project.xlsx
+/scratch/
+/debug_*.js
+/test_*.js
+.gemini/
