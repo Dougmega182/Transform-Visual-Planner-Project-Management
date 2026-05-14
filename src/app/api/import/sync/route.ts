@@ -1,35 +1,19 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { processScheduleFile } from '@/lib/import-processor';
+import { scanAndProcessImports } from '@/lib/import-processor';
 
 export async function POST() {
   try {
-    const importsDir = path.join(process.cwd(), 'imports');
+    const results = await scanAndProcessImports();
     
-    if (!fs.existsSync(importsDir)) {
-      return NextResponse.json({ error: 'Imports directory not found' }, { status: 404 });
-    }
-
-    const files = fs.readdirSync(importsDir).filter(f => f.endsWith('.xlsx') || f.endsWith('.xlsm'));
-    const results = [];
-
-    for (const file of files) {
-      const filePath = path.join(importsDir, file);
-      try {
-        const result = await processScheduleFile(filePath, file);
-        results.push({ file, ...result });
-      } catch (err) {
-        results.push({ file, error: String(err) });
-      }
-    }
-
-    return NextResponse.json({
-      message: `Processed ${files.length} files`,
-      results
+    return NextResponse.json({ 
+      success: true, 
+      ...results
     });
-  } catch (err) {
-    console.error('Sync error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch (error: any) {
+    console.error('Sync error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Internal server error' 
+    }, { status: 500 });
   }
 }
