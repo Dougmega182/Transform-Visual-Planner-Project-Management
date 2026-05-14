@@ -36,9 +36,6 @@ export async function scanAndProcessImports() {
   const files = fs.readdirSync(IMPORTS_DIR).filter(f => {
     const ext = f.endsWith('.xlsx') || f.endsWith('.xlsm') || f.endsWith('.xls') || f.endsWith('.csv');
     const isSchedule = f.startsWith('Schedule_List_');
-    if (ext && !isSchedule) {
-      console.log(`[Import] Skipping non-schedule file: ${f}`);
-    }
     return ext && isSchedule;
   });
 
