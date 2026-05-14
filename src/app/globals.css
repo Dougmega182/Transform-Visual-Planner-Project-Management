@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #1a1d23;
+  --bg-secondary: #22252b;
+  --bg-cell: #2a2d33;
+  --bg-cell-alt: #252830;
+  --border-color: #33363d;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted: #5f6368;
+  --accent-teal: #26a69a;
+  --accent-green: #43a047;
+  --lane-purple: #4a2060;
+  --lane-dark: #2a2d33;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Lane color classes */
+.lane-purple { background: var(--lane-purple); }
+.lane-dark { background: var(--lane-dark); }
+
+/* Constraint pulse */
+@keyframes constraint-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); }
+  50% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0); }
+}
+.constraint-dot {
+  animation: constraint-pulse 2s ease-in-out infinite;
+}
+
+/* Activity card base */
+.activity-card {
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 4px 6px;
+  border-radius: 3px;
+  cursor: grab;
+  position: relative;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.activity-card:active {
+  cursor: grabbing;
+}
+
+/* Trade colors matching Nialli */
+.trade-carpet { background: #c9b458; color: #1a1d23; }
+.trade-mechanical { background: #5c8a8a; color: #fff; }
+.trade-electrical { background: #e6a020; color: #1a1d23; }
+.trade-plumbing { background: #4a7fb5; color: #fff; }
+.trade-flooring { background: #7b5ea7; color: #fff; }
+.trade-framing { background: #c97a3a; color: #fff; }
+.trade-drywall { background: #8a9a5b; color: #1a1d23; }
+.trade-painting { background: #3a8a6e; color: #fff; }
+.trade-fire { background: #c94040; color: #fff; }
+.trade-glass { background: #e6c840; color: #1a1d23; }
+.trade-concrete { background: #6b7280; color: #fff; }
+.trade-roofing { background: #92400e; color: #fff; }
+.trade-default { background: #4a5568; color: #fff; }
+
+/* Today column highlight */
+.today-column {
+  background: rgba(38, 166, 154, 0.08) !important;
+}
+
+/* Grid cell hover */
+.grid-cell:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Week navigator */
+.week-pill {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.week-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.week-pill.active {
+  background: var(--accent-teal);
+  color: #fff;
+}
