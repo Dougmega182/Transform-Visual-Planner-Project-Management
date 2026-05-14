@@ -13,6 +13,13 @@ function excelDateToJSDate(serial: number) {
 }
 
 export async function scanAndProcessImports() {
+  console.log(`[Import] Looking in: ${IMPORTS_DIR}`);
+  console.log(`[Import] Directory exists: ${fs.existsSync(IMPORTS_DIR)}`);
+  
+  if (fs.existsSync(IMPORTS_DIR)) {
+    const allFiles = fs.readdirSync(IMPORTS_DIR);
+    console.log(`[Import] All files in directory:`, allFiles);
+  }
   const results = { 
     filesProcessed: 0, 
     tasksImported: 0, 
