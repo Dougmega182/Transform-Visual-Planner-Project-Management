@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Calendar, Users, Briefcase, ChevronRight, CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
-import { usePlannerStore } from '@/store/usePlannerStore';
+import { usePlannerStore, Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
 interface SchedulingAssistantProps {
