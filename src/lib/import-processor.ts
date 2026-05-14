@@ -1,11 +1,61 @@
 import * as XLSX from 'xlsx';
 import { getDb } from './db/database';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const IMPORTS_DIR = path.resolve(process.cwd(), 'imports');
 
 function excelDateToJSDate(serial: number) {
   const utc_days = Math.floor(serial - 25569);
   const utc_value = utc_days * 86400;
   const date_info = new Date(utc_value * 1000);
   return date_info.toISOString().split('T')[0];
+}
+
+export async function scanAndProcessImports() {
+  const results = { 
+    filesProcessed: 0, 
+    tasksImported: 0, 
+    newStaffCreated: 0, 
+    validationReport: [] as any[] 
+  };
+
+  if (!fs.existsSync(IMPORTS_DIR)) {
+    fs.mkdirSync(IMPORTS_DIR, { recursive: true });
+    console.log(`[Import] Created imports directory: ${IMPORTS_DIR}`);
+    return results;
+  }
+
+  const files = fs.readdirSync(IMPORTS_DIR).filter(f => 
+    f.endsWith('.xlsx') || f.endsWith('.xlsm') || f.endsWith('.xls') || f.endsWith('.csv')
+  );
+
+  console.log(`[Import] Found ${files.length} files in ${IMPORTS_DIR}`);
+
+  for (const fileName of files) {
+    try {
+      const filePath = path.join(IMPORTS_DIR, fileName);
+      const result = await processScheduleFile(filePath, fileName);
+      
+      results.filesProcessed++;
+      results.tasksImported += result.tasksImported;
+      results.newStaffCreated += result.newStaffCreated;
+      results.validationReport.push({
+        file: fileName,
+        errors: result.errors || [],
+        warnings: result.warnings || []
+      });
+    } catch (err: any) {
+      console.error(`[Import] Failed: ${fileName} — ${err.message}`);
+      results.validationReport.push({
+        file: fileName,
+        errors: [err.message],
+        warnings: []
+      });
+    }
+  }
+
+  return results;
 }
 
 export async function processScheduleFile(filePath: string | Buffer, fileName: string) {
@@ -34,7 +84,6 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
 
   const headers = data[headerRowIdx].map(h => String(h).toLowerCase());
   const col = (name: string) => {
-     // Handle multiple possible header names
      if (name === 'title') {
         return headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('description') || h.includes('name') || h.includes('activity'));
      }
@@ -59,8 +108,6 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
      return headers.indexOf(name);
   };
 
-  // Find or create site front based on filename
-  // Example: Schedule_List_17 Glyndon Ave - FC (2).xlsx -> 17 Glyndon Ave
   const frontName = fileName
     .replace('Schedule_List_', '')
     .replace('.xlsx', '')
@@ -71,7 +118,6 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
 
   let front = db.prepare('SELECT id FROM site_fronts WHERE name = ?').get(frontName);
   if (!front) {
-    // Get max order
     const maxOrder = db.prepare('SELECT MAX("order") as mo FROM site_fronts').get() as any;
     const info = db.prepare('INSERT INTO site_fronts (name, "order") VALUES (?, ?)').run(frontName, (maxOrder.mo || 0) + 1);
     front = { id: info.lastInsertRowid };
@@ -95,13 +141,11 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     ON CONFLICT DO NOTHING
   `);
 
-  // Explicitly ensure user priorities exist
   const today = new Date().toISOString().split('T')[0];
   upsertPool.run('Carpentry My staff', 'in-house', 8, today);
   upsertPool.run('Labourers My staff', 'in-house', 12, today);
 
   const uniqueTrades = new Set<string>();
-
   const titleCol = col('title');
   const startCol = col('start');
 
@@ -116,7 +160,6 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   const zoneCol = col('zone');
   const progressCol = col('progress');
   const tradeCol = col('trade');
-
   const assigneeCol = col('assignee');
 
   for (const row of rows) {
@@ -132,7 +175,6 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     
     let trade = tradeCol !== -1 ? String(row[tradeCol] || '').trim() : '';
     if (!trade || trade === 'undefined') {
-       // Extract trade/sub from Assigned To (take first part before comma)
        const assignee = assigneeCol !== -1 ? String(row[assigneeCol] || '').split(',')[0].trim() : '';
        trade = assignee || 'General';
     }
@@ -162,14 +204,13 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     tasksImported++;
   }
 
-  // Populate pool with discovered trades
   let newStaffCreated = 0;
   uniqueTrades.forEach(t => {
     const info = upsertPool.run(t, 'subcontractor', 4, today);
     if (info.changes > 0) newStaffCreated++;
   });
 
-  const uniqueZones = Array.from(new Set(rows.map(row => String(row[col('zone')] || row[col('location')] || '').trim()).filter(Boolean)));
+  const uniqueZones = Array.from(new Set(rows.map(row => String(row[zoneCol !== -1 ? zoneCol : -1] || '').trim()).filter(Boolean)));
 
   console.log(`[Import] ${fileName}: Processed ${rows.length} rows, imported ${tasksImported} tasks, created ${newStaffCreated} new resources.`);
 
