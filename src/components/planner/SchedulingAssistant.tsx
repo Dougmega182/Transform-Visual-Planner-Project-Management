@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Play } from 'lucide-react';
+import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Clock, Play } from 'lucide-react';
 import { usePlannerStore, Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
@@ -22,9 +22,7 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
   });
 
   const trades = Array.from(new Set(resourcePool.map(p => p.trade))).sort();
-  const prioritizedTrades = ['Carpentry My staff', 'Labourers My staff', ...trades.filter(t => t !== 'Carpentry My staff' && t !== 'Labourers My staff')];
   const zones = Array.from(new Set(tasks.map(t => t.zone || 'Unassigned').filter(Boolean))).sort();
-
   const [results, setResults] = useState<{ date: Date; score: number; reasoning: string[] }[]>([]);
 
   const scoringConfig = {
@@ -136,7 +134,13 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
     setResults(candidates.slice(0, 5));
   };
 
-  const getScoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 60 ? 'text-yellow-400' : 'text-red-400';
+  const getScoreColor = (s: number) => {
+    if (s >= 80) return 'text-green-400';
+    if (s >= 60) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const prioritizedTrades = trades.filter(t => t !== 'General');
 
   return (
     <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] p-5 shadow-xl">
@@ -171,7 +175,7 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
             <input 
               type="number" 
               value={requirements.duration}
-              onChange={(e) => setRequirements({ ...requirements, duration: parseInt(e.target.value) })}
+              onChange={(e) => setRequirements({ ...requirements, duration: parseInt(e.target.value) || 1 })}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)]"
             />
           </div>
@@ -180,85 +184,88 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
             <input 
               type="number" 
               value={requirements.crewSize}
-              onChange={(e) => setRequirements({ ...requirements, crewSize: parseInt(e.target.value) })}
+              onChange={(e) => setRequirements({ ...requirements, crewSize: parseInt(e.target.value) || 1 })}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)]"
             />
           </div>
-          <div className="col-span-2">
-            <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] mb-1.5 block">Location / Zone</label>
-            <select
-              value={requirements.zone}
-              onChange={(e) => setRequirements({ ...requirements, zone: e.target.value })}
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)]"
-            >
-              {zones.length > 0 ? (
-                zones.map(z => (
-                  <option key={z} value={z}>{z}</option>
-                ))
-              ) : (
-                <option value="All Zones">All Zones</option>
-              )}
-            </select>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
+        <div>
+          <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] mb-1.5 block">Zone</label>
+          <select
+            value={requirements.zone}
+            onChange={(e) => setRequirements({ ...requirements, zone: e.target.value })}
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            {zones.map(z => (
+              <option key={z} value={z}>{z}</option>
+            ))}
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
           <input 
             type="checkbox"
-            id="weatherSensitive"
             checked={requirements.weatherSensitive}
             onChange={(e) => setRequirements({ ...requirements, weatherSensitive: e.target.checked })}
-            className="w-4 h-4 rounded border-[var(--border-color)] text-blue-600 focus:ring-blue-500/20"
+            className="rounded border-[var(--border-color)] bg-[var(--bg-primary)]"
           />
-          <label htmlFor="weatherSensitive" className="text-xs font-medium text-[var(--text-secondary)] cursor-pointer">
-            Weather Sensitive (Apply 20% Duration Buffer)
-          </label>
-        </div>
+          <span className="text-xs text-[var(--text-secondary)]">Weather-sensitive activity</span>
+        </label>
 
         <button 
           onClick={runAnalysis}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
-          <Play size={14} fill="currentColor" />
-          Check Availability
+          <ChevronRight size={14} />
+          Find Best Dates
         </button>
       </div>
 
       {results.length > 0 && (
         <div className="space-y-3">
-          <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Recommended Start Dates</label>
-          {results.map((res, i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl group hover:border-blue-500/50 transition-all cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${i === 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                  {i === 0 ? <CheckCircle2 size={16} /> : <Calendar size={16} />}
+          <h3 className="text-[10px] uppercase font-bold text-[var(--text-muted)]">Top Recommendations</h3>
+          {results.map((r, i) => (
+            <div key={i} className="bg-[var(--bg-primary)] rounded-xl p-3 border border-[var(--border-color)]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {r.score >= 80 ? <CheckCircle2 size={14} className="text-green-400" /> : <AlertCircle size={14} className={getScoreColor(r.score)} />}
+                  <span className="text-xs font-bold text-[var(--text-primary)]">{format(r.date, 'EEE, MMM d, yyyy')}</span>
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-[var(--text-primary)]">{format(res.date, 'EEEE, MMM do')}</div>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {res.reasoning.map((reason, idx) => (
-                      <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-muted)] font-medium">
-                        {reason}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <span className={`text-sm font-black ${getScoreColor(r.score)}`}>{r.score}</span>
               </div>
-              <div className="text-right">
-                <div className={`text-[10px] font-black ${getScoreColor(res.score)}`}>{res.score}%</div>
-                <ChevronRight size={14} className="text-[var(--text-muted)] group-hover:text-blue-500 transition-colors ml-auto mt-1" />
+              <div className="space-y-1">
+                {r.reasoning.map((reason, j) => (
+                  <p key={j} className="text-[10px] text-[var(--text-muted)] flex items-start gap-1.5">
+                    <span className="mt-0.5 shrink-0">•</span>
+                    {reason}
+                  </p>
+                ))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-[var(--border-color)] flex items-center justify-between">
+                <span className="text-[10px] text-[var(--text-muted)]">
+                  Ends: {format(getBusinessDaysEnd(r.date, requirements.weatherSensitive ? Math.ceil(requirements.duration * scoringConfig.weatherBuffer) : requirements.duration), 'MMM d, yyyy')}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  r.score >= 80 ? 'bg-green-500/10 text-green-400' : 
+                  r.score >= 60 ? 'bg-yellow-500/10 text-yellow-400' : 
+                  'bg-red-500/10 text-red-400'
+                }`}>
+                  {r.score >= 80 ? 'Recommended' : r.score >= 60 ? 'Acceptable' : 'Risky'}
+                </span>
               </div>
             </div>
           ))}
         </div>
       )}
-
       {results.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-2xl">
-          <AlertCircle size={24} className="text-[var(--text-muted)] mb-2" />
-          <p className="text-xs text-[var(--text-muted)]">Select requirements and check availability to see suggestions</p>
+        <div className="text-center py-6">
+          <Clock size={24} className="mx-auto text-[var(--text-muted)] mb-2 opacity-40" />
+          <p className="text-[10px] text-[var(--text-muted)]">Configure requirements above and click Find Best Dates</p>
         </div>
       )}
     </div>
   );
 };
+
+export default SchedulingAssistant;
