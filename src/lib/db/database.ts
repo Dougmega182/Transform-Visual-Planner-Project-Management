@@ -43,7 +43,8 @@ function initSchema(db: Database.Database) {
       total_capacity INTEGER NOT NULL,
       effective_from DATE NOT NULL,
       effective_until DATE,          -- NULL = indefinite
-      daily_cost REAL DEFAULT 0
+      daily_cost REAL DEFAULT 0,
+      UNIQUE(trade, source)
     );
 
     CREATE TABLE IF NOT EXISTS upcoming_projects (

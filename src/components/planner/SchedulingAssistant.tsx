@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Calendar, Users, Briefcase, ChevronRight, CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
-import { Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
+import { usePlannerStore } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
 interface SchedulingAssistantProps {
@@ -11,6 +11,8 @@ interface SchedulingAssistantProps {
 }
 
 export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks, staff, taskAssignments }) => {
+  const resourcePool = usePlannerStore((state) => state.resourcePool);
+  
   const [requirements, setRequirements] = useState({
     duration: 14,
     crewSize: 4,
@@ -18,6 +20,11 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
     zone: 'Zone A',
     weatherSensitive: false,
   });
+
+  // Get unique trades from pool
+  const trades = Array.from(new Set(resourcePool.map(p => p.trade))).sort();
+  // Prioritize user's specific staff
+  const prioritizedTrades = ['Carpentry My staff', 'Labourers My staff', ...trades.filter(t => t !== 'Carpentry My staff' && t !== 'Labourers My staff')];
 
   const [results, setResults] = useState<{ date: Date; score: number; reasoning: string[] }[]>([]);
 
@@ -125,10 +132,9 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
             className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="General">All Trades</option>
-            <option value="Concrete">Concrete</option>
-            <option value="Formwork">Formwork</option>
-            <option value="MEP">MEP</option>
-            <option value="Electrical">Electrical</option>
+            {prioritizedTrades.map(trade => (
+              <option key={trade} value={trade}>{trade}</option>
+            ))}
           </select>
         </div>
 
@@ -158,10 +164,13 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
               onChange={(e) => setRequirements({ ...requirements, zone: e.target.value })}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)]"
             >
-              <option value="Zone A">Zone A</option>
-              <option value="Building A">Building A</option>
-              <option value="Building B">Building B</option>
-              <option value="Level 1">Level 1</option>
+              {Array.from(new Set(tasks.map(t => t.zone).filter(Boolean))).length > 0 ? (
+                Array.from(new Set(tasks.map(t => t.zone).filter(Boolean))).sort().map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))
+              ) : (
+                <option value="All Zones">All Zones</option>
+              )}
             </select>
           </div>
         </div>

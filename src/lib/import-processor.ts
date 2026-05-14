@@ -58,25 +58,35 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   const insertTask = db.prepare(`
     INSERT INTO tasks (
       front_id, title, date, duration, crew_count, stage, status, 
-      zone, subcontractor, hours_per_day, equipment_needs, weather_sensitivity, cost_rate
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      zone, subcontractor, hours_per_day, equipment_needs, weather_sensitivity, cost_rate, trade
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+
+  const upsertPool = db.prepare(`
+    INSERT INTO resource_pool (trade, source, total_capacity, effective_from)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT DO NOTHING
+  `);
+
+  // Explicitly ensure user priorities exist
+  const today = new Date().toISOString().split('T')[0];
+  upsertPool.run('Carpentry My staff', 'in-house', 8, today);
+  upsertPool.run('Labourers My staff', 'in-house', 12, today);
+
+  const uniqueTrades = new Set<string>();
 
   for (const row of rows) {
     const title = row[col('title')];
     if (!title) continue;
 
     const startSerial = row[col('start')];
-    const duration = row[col('duration')] || 1;
-    const crewCount = row[col('crew')] || row[col('crew count')] || 1;
-    const phase = row[col('phase')] || 'unassigned';
-    const zone = row[col('zone')] || row[col('location')] || '';
-    const subcontractor = row[col('subcontractor')] || row[col('company')] || '';
+    const duration = Number(row[col('duration')]) || 1;
+    const crewCount = Number(row[col('crew')] || row[col('crew count')]) || 1;
+    const phase = String(row[col('phase')] || 'unassigned');
+    const zone = String(row[col('zone')] || row[col('location')] || '');
+    const trade = String(row[col('trade')] || row[col('subcontractor')] || row[col('company')] || 'General').trim();
 
-    if (!duration) {
-      errors.push(`Task "${title}": Missing duration.`);
-      continue;
-    }
+    if (trade && trade !== 'General') uniqueTrades.add(trade);
 
     const startDate = typeof startSerial === 'number' ? excelDateToJSDate(startSerial) : null;
     
@@ -89,14 +99,22 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
       phase, 
       'not-started',
       zone,
-      subcontractor,
-      8.0, // Default hours
-      '',  // Default equipment
-      0,   // Default weather
-      0    // Default cost
+      trade, // Using trade for subcontractor field if that's what's available
+      8.0,
+      '',
+      0,
+      0,
+      trade  // Actual trade field
     );
     tasksImported++;
   }
 
-  return { tasksImported, errors, warnings };
+  // Populate pool with discovered trades
+  uniqueTrades.forEach(t => {
+    upsertPool.run(t, 'subcontractor', 4, today);
+  });
+
+  const uniqueZones = Array.from(new Set(rows.map(row => String(row[col('zone')] || row[col('location')] || '').trim()).filter(Boolean)));
+
+  return { tasksImported, errors, warnings, uniqueZones };
 }
