@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/database';
 
+async function calculateProjectForecast(projectId: number) {
+  // Stub — returns empty forecast until forecasting module is built
+  return {
+    success: true,
+    projectedStart: null,
+    estimatedEnd: null,
+    confidence: 0,
+    resourceConflicts: [],
+    phases: [],
+    totalDurationDays: 0
+  };
+}
+
 export async function GET() {
   try {
     const db = getDb();

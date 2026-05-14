@@ -33,9 +33,14 @@ export async function scanAndProcessImports() {
     return results;
   }
 
-  const files = fs.readdirSync(IMPORTS_DIR).filter(f => 
-    f.endsWith('.xlsx') || f.endsWith('.xlsm') || f.endsWith('.xls') || f.endsWith('.csv')
-  );
+  const files = fs.readdirSync(IMPORTS_DIR).filter(f => {
+    const ext = f.endsWith('.xlsx') || f.endsWith('.xlsm') || f.endsWith('.xls') || f.endsWith('.csv');
+    const isSchedule = f.startsWith('Schedule_List_') || f === 'schedule_latest.xlsx';
+    if (ext && !isSchedule) {
+      console.log(`[Import] Skipping non-schedule file: ${f}`);
+    }
+    return ext && isSchedule;
+  });
 
   console.log(`[Import] Found ${files.length} files in ${IMPORTS_DIR}`);
 
@@ -67,6 +72,27 @@ export async function scanAndProcessImports() {
 
 export async function processScheduleFile(filePath: string | Buffer, fileName: string) {
   const db = getDb();
+  
+  // Ensure all required columns exist in tasks table
+  const existingCols = db.prepare("PRAGMA table_info(tasks)").all().map((c: any) => c.name);
+  const requiredCols: [string, string][] = [
+    ['crew_count', 'INTEGER DEFAULT 1'],
+    ['zone', 'TEXT DEFAULT ""'],
+    ['subcontractor', 'TEXT DEFAULT ""'],
+    ['hours_per_day', 'REAL DEFAULT 8.0'],
+    ['equipment_needs', 'TEXT DEFAULT ""'],
+    ['weather_sensitivity', 'INTEGER DEFAULT 0'],
+    ['cost_rate', 'REAL DEFAULT 0'],
+    ['trade', 'TEXT DEFAULT "General"'],
+    ['percent_complete', 'REAL DEFAULT 0'],
+  ];
+  for (const [colName, colDef] of requiredCols) {
+    if (!existingCols.includes(colName)) {
+      db.prepare(`ALTER TABLE tasks ADD COLUMN ${colName} ${colDef}`).run();
+      console.log(`[Import] Added missing column: tasks.${colName}`);
+    }
+  }
+
   let workbook: XLSX.WorkBook;
   if (typeof filePath === 'string') {
     const fileBuffer = fs.readFileSync(filePath);
