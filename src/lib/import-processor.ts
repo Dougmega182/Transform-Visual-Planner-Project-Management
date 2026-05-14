@@ -67,6 +67,23 @@ export async function scanAndProcessImports() {
     }
   }
 
+  // Clean up empty fronts (from previous bad imports or non-schedule files)
+  const db = getDb();
+  const emptyFronts = db.prepare(`
+    SELECT sf.id, sf.name FROM site_fronts sf 
+    LEFT JOIN tasks t ON t.front_id = sf.id 
+    GROUP BY sf.id 
+    HAVING COUNT(t.id) = 0
+  `).all();
+  
+  if (emptyFronts.length > 0) {
+    const deleteEmpty = db.prepare('DELETE FROM site_fronts WHERE id = ?');
+    for (const f of emptyFronts as any[]) {
+      deleteEmpty.run(f.id);
+      console.log(`[Import] Removed empty front: ${f.name}`);
+    }
+  }
+
   return results;
 }
 
