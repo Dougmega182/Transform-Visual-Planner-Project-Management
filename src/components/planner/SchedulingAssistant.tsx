@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Calendar, Users, Briefcase, ChevronRight, CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
+import { Calendar, ChevronRight, CheckCircle2, AlertCircle, Play } from 'lucide-react';
 import { usePlannerStore, Task, Staff, TaskAssignment } from '@/store/usePlannerStore';
 import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
 
@@ -12,7 +12,7 @@ interface SchedulingAssistantProps {
 
 export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks, staff, taskAssignments }) => {
   const resourcePool = usePlannerStore((state) => state.resourcePool);
-  
+
   const [requirements, setRequirements] = useState({
     duration: 14,
     crewSize: 4,
@@ -21,94 +21,164 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
     weatherSensitive: false,
   });
 
-  // Get unique trades from pool
   const trades = Array.from(new Set(resourcePool.map(p => p.trade))).sort();
-  // Prioritize user's specific staff
   const prioritizedTrades = ['Carpentry My staff', 'Labourers My staff', ...trades.filter(t => t !== 'Carpentry My staff' && t !== 'Labourers My staff')];
+  const zones = Array.from(new Set(tasks.map(t => t.zone || 'Unassigned').filter(Boolean))).sort();
 
   const [results, setResults] = useState<{ date: Date; score: number; reasoning: string[] }[]>([]);
 
-  // 1. Scoring Pipeline Configuration
   const scoringConfig = {
-    zonePenalty: 15,        // Penalty for same-zone congestion
-    subLimit: 3,           // Max concurrent tasks per sub
-    weatherBuffer: 1.2,    // 20% duration padding for weather-sensitive tasks
-    densityThreshold: 20,  // Max crew size per zone before flagging
+    zonePenalty: 15,
+    subLimit: 3,
+    weatherBuffer: 1.2,
+    densityThreshold: 20,
   };
 
   const isBusinessDay = (date: Date) => {
     const day = date.getDay();
-    return day !== 0 && day !== 6; 
+    return day !== 0 && day !== 6;
   };
 
-  const calculateEndDate = (startDate: Date, duration: number, isWeatherSensitive: boolean) => {
-    const paddedDuration = isWeatherSensitive ? Math.ceil(duration * scoringConfig.weatherBuffer) : duration;
-    let current = new Date(startDate);
-    let daysAdded = 0;
-    while (daysAdded < paddedDuration) {
-      current = addDays(current, 1);
-      if (isBusinessDay(current)) {
-        daysAdded++;
-      }
+  const getNextBusinessDay = (date: Date): Date => {
+    let next = addDays(date, 1);
+    while (!isBusinessDay(next)) {
+      next = addDays(next, 1);
+    }
+    return next;
+  };
+
+  const getBusinessDaysEnd = (start: Date, durationDays: number): Date => {
+    let current = start;
+    let counted = 0;
+    while (counted < durationDays) {
+      current = getNextBusinessDay(current);
+      counted++;
     }
     return current;
   };
 
-  const findOptimalDates = () => {
-    const suggestions: { date: Date; score: number; reasoning: string[] }[] = [];
-    const today = startOfDay(new Date());
+  const getActiveTasksOnDate = (date: Date): Task[] => {
+    const day = startOfDay(date);
+    return tasks.filter(t => {
+      if (!t.startDate || !t.endDate || t.status === 'completed') return false;
+      return isWithinInterval(day, {
+        start: startOfDay(new Date(t.startDate)),
+        end: startOfDay(new Date(t.endDate)),
+      });
+    });
+  };
 
-    for (let i = 0; i < 60; i++) {
-      const candidateDate = addDays(today, i);
-      if (!isBusinessDay(candidateDate)) continue;
+  const getZoneDensity = (date: Date, zone: string): number => {
+    const active = getActiveTasksOnDate(date);
+    return active
+      .filter(t => t.zone === zone)
+      .reduce((sum, t) => sum + (t.crewCount || 1), 0);
+  };
 
-      // Basic project details for this run
-      const isWeatherSensitive = requirements.weatherSensitive;
-      const endDate = calculateEndDate(candidateDate, requirements.duration, isWeatherSensitive);
-      
-      let totalScore = 0;
-      let reasons: string[] = [];
-      
-      if (isWeatherSensitive) reasons.push("Weather Buffered");
-      
-      // RUN SCORING PIPELINE
-      tasks.forEach(task => {
-        const taskStart = new Date(task.startDate);
-        const taskEnd = addDays(taskStart, task.duration || 1);
-        
-        const overlap = isWithinInterval(taskStart, { start: candidateDate, end: endDate }) ||
-                        isWithinInterval(taskEnd, { start: candidateDate, end: endDate }) ||
-                        (taskStart <= candidateDate && taskEnd >= endDate);
-        
-        if (overlap) {
-          // Scorer 1: Trade Load
-          if (task.trade === requirements.trade || requirements.trade === 'General') {
-            const load = task.crewCount || 1;
-            totalScore += load;
-            if (load > 5) reasons.push(`${task.trade} High Load: ${task.name}`);
-          }
+  const getTradeUtilization = (date: Date, trade: string): { used: number; capacity: number } => {
+    const active = getActiveTasksOnDate(date);
+    const used = active
+      .filter(t => t.trade === trade)
+      .reduce((sum, t) => sum + (t.crewCount || 1), 0);
 
-          // Scorer 2: Zone Density
-          if (task.zone === requirements.zone) {
-            totalScore += scoringConfig.zonePenalty;
-            reasons.push(`Zone Congestion: ${task.zone}`);
-          }
+    const capacity = resourcePool
+      .filter(p => p.trade === trade)
+      .reduce((sum, p) => sum + (p.total_capacity || 0), 0);
 
-          // Scorer 3: Subcontractor Saturation
-          // (Placeholder for sub-specific logic)
+    return { used, capacity };
+  };
+
+  const scoreStartDate = (candidateDate: Date): { score: number; reasoning: string[] } => {
+    const reasoning: string[] = [];
+    let score = 100;
+
+    const effectiveDuration = requirements.weatherSensitive
+      ? Math.ceil(requirements.duration * scoringConfig.weatherBuffer)
+      : requirements.duration;
+
+    const endDate = getBusinessDaysEnd(candidateDate, effectiveDuration);
+
+    let worstUtilization = 0;
+    let current = candidateDate;
+
+    while (current <= endDate) {
+      if (isBusinessDay(current)) {
+        const { used, capacity } = getTradeUtilization(current, requirements.trade);
+        const needed = used + requirements.crewSize;
+
+        if (capacity > 0 && needed > capacity) {
+          const overBy = needed - capacity;
+          score -= overBy * 10;
+          reasoning.push(`${format(current, 'MMM d')}: ${requirements.trade} over capacity by ${overBy}`);
         }
-      });
 
-      if (totalScore === 0) reasons.push("Clear Window");
+        if (capacity > 0) {
+          worstUtilization = Math.max(worstUtilization, needed / capacity);
+        }
 
-      suggestions.push({ 
-        date: candidateDate, 
-        score: totalScore, 
-        reasoning: Array.from(new Set(reasons)).slice(0, 2) 
-      });
+        const density = getZoneDensity(current, requirements.zone) + requirements.crewSize;
+        if (density > scoringConfig.densityThreshold) {
+          score -= scoringConfig.zonePenalty;
+          reasoning.push(`${format(current, 'MMM d')}: ${requirements.zone} congested (${density} crew)`);
+        }
+      }
+      current = addDays(current, 1);
     }
 
-    setResults(suggestions.sort((a, b) => a.score - b.score).slice(0, 3));
+    if (worstUtilization < 0.7) {
+      score += 10;
+      reasoning.push(`Good trade availability (peak ${Math.round(worstUtilization * 100)}%)`);
+    } else if (worstUtilization > 0.9) {
+      score -= 15;
+      reasoning.push(`Tight trade availability (peak ${Math.round(worstUtilization * 100)}%)`);
+    }
+
+    // Subcontractor concurrency check
+    const activeOnStart = getActiveTasksOnDate(candidateDate);
+    const sameTradeActive = activeOnStart.filter(t => t.trade === requirements.trade);
+    if (sameTradeActive.length >= scoringConfig.subLimit) {
+      score -= 20;
+      reasoning.push(`${sameTradeActive.length} concurrent ${requirements.trade} tasks already running`);
+    }
+
+    if (requirements.weatherSensitive) {
+      const month = candidateDate.getMonth();
+      if (month >= 10 || month <= 2) {
+        score -= 10;
+        reasoning.push('Winter period — weather risk elevated');
+      } else if (month >= 4 && month <= 8) {
+        score += 5;
+        reasoning.push('Summer period — favorable weather window');
+      }
+    }
+
+    if (reasoning.length === 0) {
+      reasoning.push('No conflicts detected — clear window');
+    }
+
+    return { score: Math.max(0, Math.min(100, score)), reasoning };
+  };
+
+  const runAnalysis = () => {
+    const candidates: { date: Date; score: number; reasoning: string[] }[] = [];
+    let scanDate = startOfDay(new Date());
+
+    for (let i = 0; i < 90; i++) {
+      if (isBusinessDay(scanDate)) {
+        const { score, reasoning } = scoreStartDate(scanDate);
+        candidates.push({ date: new Date(scanDate), score, reasoning });
+      }
+      scanDate = addDays(scanDate, 1);
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    setResults(candidates.slice(0, 5));
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-400';
+    if (score >= 50) return 'text-amber-400';
+    return 'text-red-400';
   };
 
   return (
@@ -164,8 +234,8 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
               onChange={(e) => setRequirements({ ...requirements, zone: e.target.value })}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)]"
             >
-              {Array.from(new Set(tasks.map(t => t.zone).filter(Boolean))).length > 0 ? (
-                Array.from(new Set(tasks.map(t => t.zone).filter(Boolean))).sort().map(z => (
+              {zones.length > 0 ? (
+                zones.map(z => (
                   <option key={z} value={z}>{z}</option>
                 ))
               ) : (
@@ -189,9 +259,10 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
         </div>
 
         <button 
-          onClick={findOptimalDates}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+          onClick={runAnalysis}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
         >
+          <Play size={14} fill="currentColor" />
           Check Availability
         </button>
       </div>
@@ -217,8 +288,8 @@ export const SchedulingAssistant: React.FC<SchedulingAssistantProps> = ({ tasks,
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-bold text-[var(--text-secondary)]">Score: {res.score}</div>
-                <ChevronRight size={14} className="text-[var(--text-muted)] group-hover:text-blue-500 transition-colors ml-auto" />
+                <div className={`text-[10px] font-black ${getScoreColor(res.score)}`}>{res.score}%</div>
+                <ChevronRight size={14} className="text-[var(--text-muted)] group-hover:text-blue-500 transition-colors ml-auto mt-1" />
               </div>
             </div>
           ))}
