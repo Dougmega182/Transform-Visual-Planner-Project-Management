@@ -18,6 +18,7 @@ export async function POST() {
     }
 
     let totalTasksImported = 0;
+    let totalNewStaffCreated = 0;
     const validationReport: { file: string; errors: string[]; warnings: string[] }[] = [];
 
     for (const file of files) {
@@ -25,6 +26,7 @@ export async function POST() {
         const filePath = path.join(importDir, file);
         const result = await processScheduleFile(filePath, file);
         totalTasksImported += result.tasksImported;
+        totalNewStaffCreated += (result as any).newStaffCreated || 0;
         validationReport.push({
           file,
           errors: result.errors || [],
@@ -43,6 +45,7 @@ export async function POST() {
       success: true, 
       filesProcessed: files.length,
       tasksImported: totalTasksImported,
+      newStaffCreated: totalNewStaffCreated,
       validationReport
     });
   } catch (error: any) {

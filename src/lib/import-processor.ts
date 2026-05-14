@@ -17,9 +17,12 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
 
   // Find header row (usually contains 'title' or 'start')
   let headerRowIdx = -1;
-  for (let i = 0; i < Math.min(data.length, 20); i++) {
-    const row = data[i].map(c => String(c).toLowerCase());
-    if (row.includes('title') || row.includes('task') || row.includes('start')) {
+  for (let i = 0; i < Math.min(data.length, 50); i++) {
+    if (!data[i]) continue;
+    const row = data[i].map(c => String(c || '').toLowerCase());
+    // Broaden the search for common project schedule headers
+    if (row.some(h => h.includes('title') || h.includes('task') || h.includes('start') || h.includes('activity') || h.includes('resource'))) {
+      console.log(`[Import] Found potential header row at idx ${i}:`, row.filter(h => h).slice(0, 5));
       headerRowIdx = i;
       break;
     }
@@ -33,17 +36,25 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   const col = (name: string) => {
      // Handle multiple possible header names
      if (name === 'title') {
-        const idx = headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('description'));
-        return idx;
+        return headers.findIndex(h => h.includes('title') || h.includes('task') || h.includes('description') || h.includes('name') || h.includes('activity'));
      }
      if (name === 'start') {
-        return headers.findIndex(h => h.includes('start') || h.includes('date'));
+        return headers.findIndex(h => h.includes('start') || h.includes('planned start') || h.includes('date'));
+     }
+     if (name === 'duration') {
+        return headers.findIndex(h => h.includes('duration') || h.includes('days') || h.includes('length'));
      }
      if (name === 'trade' || name === 'assignee') {
-        return headers.findIndex(h => h.includes('trade') || h.includes('assignee') || h.includes('assigned to'));
+        return headers.findIndex(h => h.includes('trade') || h.includes('assignee') || h.includes('assigned to') || h.includes('resource') || h.includes('contact'));
      }
      if (name === 'progress') {
-        return headers.findIndex(h => h.includes('progress') || h.includes('percent'));
+        return headers.findIndex(h => h.includes('progress') || h.includes('percent') || h.includes('%'));
+     }
+     if (name === 'zone' || name === 'location') {
+        return headers.findIndex(h => h.includes('zone') || h.includes('location') || h.includes('area') || h.includes('front'));
+     }
+     if (name === 'crew') {
+        return headers.findIndex(h => h.includes('crew') || h.includes('headcount') || h.includes('people'));
      }
      return headers.indexOf(name);
   };
@@ -91,21 +102,38 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
 
   const uniqueTrades = new Set<string>();
 
+  const titleCol = col('title');
+  const startCol = col('start');
+
+  if (titleCol === -1 || startCol === -1) {
+    console.error(`[Import] Missing critical columns (title/start) in ${fileName}`);
+    return { tasksImported: 0, newStaffCreated: 0, errors: [`Missing critical columns in ${fileName}`], warnings: [], uniqueZones: [] };
+  }
+
+  const durCol = col('duration');
+  const crewCol = col('crew');
+  const phaseCol = col('phase');
+  const zoneCol = col('zone');
+  const progressCol = col('progress');
+  const tradeCol = col('trade');
+
+  const assigneeCol = col('assignee');
+
   for (const row of rows) {
-    const title = row[col('title')];
+    const title = row[titleCol];
     if (!title) continue;
 
-    const startSerial = row[col('start')];
-    const duration = Number(row[col('duration')]) || 1;
-    const crewCount = Number(row[col('crew')] || row[col('crew count')]) || 1;
-    const phase = String(row[col('phase')] || 'unassigned');
-    const zone = String(row[col('zone')] || row[col('location')] || '');
-    const progress = Number(row[col('progress')]) || 0;
+    const startSerial = row[startCol];
+    const duration = durCol !== -1 ? Number(row[durCol]) || 1 : 1;
+    const crewCount = crewCol !== -1 ? Number(row[crewCol]) || 1 : 1;
+    const phase = phaseCol !== -1 ? String(row[phaseCol] || 'unassigned') : 'unassigned';
+    const zone = zoneCol !== -1 ? String(row[zoneCol] || '') : '';
+    const progress = progressCol !== -1 ? Number(row[progressCol]) || 0 : 0;
     
-    let trade = String(row[col('trade')] || '').trim();
+    let trade = tradeCol !== -1 ? String(row[tradeCol] || '').trim() : '';
     if (!trade || trade === 'undefined') {
        // Extract trade/sub from Assigned To (take first part before comma)
-       const assignee = String(row[col('assignee')] || '').split(',')[0].trim();
+       const assignee = assigneeCol !== -1 ? String(row[assigneeCol] || '').split(',')[0].trim() : '';
        trade = assignee || 'General';
     }
 
@@ -135,11 +163,15 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   }
 
   // Populate pool with discovered trades
+  let newStaffCreated = 0;
   uniqueTrades.forEach(t => {
-    upsertPool.run(t, 'subcontractor', 4, today);
+    const info = upsertPool.run(t, 'subcontractor', 4, today);
+    if (info.changes > 0) newStaffCreated++;
   });
 
   const uniqueZones = Array.from(new Set(rows.map(row => String(row[col('zone')] || row[col('location')] || '').trim()).filter(Boolean)));
 
-  return { tasksImported, errors, warnings, uniqueZones };
+  console.log(`[Import] ${fileName}: Processed ${rows.length} rows, imported ${tasksImported} tasks, created ${newStaffCreated} new resources.`);
+
+  return { tasksImported, newStaffCreated, errors, warnings, uniqueZones };
 }
