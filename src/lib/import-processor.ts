@@ -39,14 +39,30 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
      if (name === 'start') {
         return headers.findIndex(h => h.includes('start') || h.includes('date'));
      }
+     if (name === 'trade' || name === 'assignee') {
+        return headers.findIndex(h => h.includes('trade') || h.includes('assignee') || h.includes('assigned to'));
+     }
+     if (name === 'progress') {
+        return headers.findIndex(h => h.includes('progress') || h.includes('percent'));
+     }
      return headers.indexOf(name);
   };
 
   // Find or create site front based on filename
-  const frontName = fileName.replace('Schedule_List_', '').replace('.xlsx', '').replace('.xlsm', '').split(' - ')[0];
+  // Example: Schedule_List_17 Glyndon Ave - FC (2).xlsx -> 17 Glyndon Ave
+  const frontName = fileName
+    .replace('Schedule_List_', '')
+    .replace('.xlsx', '')
+    .replace('.xlsm', '')
+    .split(' - ')[0]
+    .split(' (')[0]
+    .trim();
+
   let front = db.prepare('SELECT id FROM site_fronts WHERE name = ?').get(frontName);
   if (!front) {
-    const info = db.prepare('INSERT INTO site_fronts (name, "order") VALUES (?, ?)').run(frontName, 0);
+    // Get max order
+    const maxOrder = db.prepare('SELECT MAX("order") as mo FROM site_fronts').get() as any;
+    const info = db.prepare('INSERT INTO site_fronts (name, "order") VALUES (?, ?)').run(frontName, (maxOrder.mo || 0) + 1);
     front = { id: info.lastInsertRowid };
   }
 
@@ -58,8 +74,8 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
   const insertTask = db.prepare(`
     INSERT INTO tasks (
       front_id, title, date, duration, crew_count, stage, status, 
-      zone, subcontractor, hours_per_day, equipment_needs, weather_sensitivity, cost_rate, trade
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      zone, subcontractor, hours_per_day, equipment_needs, weather_sensitivity, cost_rate, trade, percent_complete
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const upsertPool = db.prepare(`
@@ -84,11 +100,19 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
     const crewCount = Number(row[col('crew')] || row[col('crew count')]) || 1;
     const phase = String(row[col('phase')] || 'unassigned');
     const zone = String(row[col('zone')] || row[col('location')] || '');
-    const trade = String(row[col('trade')] || row[col('subcontractor')] || row[col('company')] || 'General').trim();
+    const progress = Number(row[col('progress')]) || 0;
+    
+    let trade = String(row[col('trade')] || '').trim();
+    if (!trade || trade === 'undefined') {
+       // Extract trade/sub from Assigned To (take first part before comma)
+       const assignee = String(row[col('assignee')] || '').split(',')[0].trim();
+       trade = assignee || 'General';
+    }
 
     if (trade && trade !== 'General') uniqueTrades.add(trade);
 
     const startDate = typeof startSerial === 'number' ? excelDateToJSDate(startSerial) : null;
+    const status = progress === 100 ? 'completed' : (progress > 0 ? 'in-progress' : 'not-started');
     
     insertTask.run(
       (front as any).id, 
@@ -97,14 +121,15 @@ export async function processScheduleFile(filePath: string | Buffer, fileName: s
       duration,
       crewCount,
       phase, 
-      'not-started',
+      status,
       zone,
-      trade, // Using trade for subcontractor field if that's what's available
+      trade, 
       8.0,
       '',
       0,
       0,
-      trade  // Actual trade field
+      trade,
+      progress
     );
     tasksImported++;
   }
